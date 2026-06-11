@@ -57,6 +57,7 @@ _DISPATCH = {
     "feature": ("inertia_forge.feature", "run_feature"),
     "learn": ("inertia_forge.learn", "run_learn"),
     "standup": ("inertia_forge.standup", "run_standup"),
+    "contain": ("inertia_forge.containment", "run_contain"),
 }
 
 

@@ -1,7 +1,7 @@
 """Native session continuity — `.forge/state.json`.
 
 A tiny "what was just done / what's next" ledger so multi-session work picks up
-cleanly. The bpsai-pair `state.md` + `context-sync` equivalent, dependency-free.
+cleanly — INERTIA's native continuity ledger, dependency-free.
 
 Shape::
 

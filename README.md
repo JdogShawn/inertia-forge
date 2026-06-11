@@ -1,10 +1,14 @@
-# inertia-forge
+# INERTIA Forge — 慣性
 
 **A project-agnostic, deterministic skill-enforcement engine. The only way out is to do the work.**
 
+> *Newton's first law for code quality:* work at rest stays at rest, work in motion must clear every gate. That's **inertia** — and it's the law this forge enforces.
+
+INERTIA Forge is the deterministic enforcement core of the **INERTIA** cognition platform, extracted to stand alone. It is **its own tool**, not a wrapper around any other — it ships its own task store, its own analyzer, its own continuity, audit, and containment. It *can* interoperate with bpsai-pair (the optional `paircoder` mode), but it needs nothing but Python.
+
 The forge makes a skill's methodology *mechanically enforced*. Invoking a skill opens a **session** with **blocking gates**. You can't manually close it, you can't skip a gate, and you can't fake evidence — the session auto-closes only when the last blocking gate is recorded with a real, hash-verified result. No escape hatch by design.
 
-Zero LLM calls. Pure deterministic algorithms.
+**Zero LLM calls. Pure deterministic algorithms.** Every gate decision is explainable and reproducible — same inputs, same verdict, every time.
 
 ---
 
@@ -66,7 +70,8 @@ inertia-forge status
 | `inertia-forge learn <text> [--tag T]` / `learn list/search` | capture/list/search insights (`.forge/knowledge.jsonl`) |
 | `inertia-forge standup [--since]` | daily summary: git commits + tasks + last/next + tokens |
 | `inertia-forge config get/set/unset/list` | typed forge settings (`.forge/config.json`) |
-| `inertia-forge init` | install the Claude Code enforcement hooks |
+| `inertia-forge contain on/off/set/check/status` | file-access tiers (blocked/readonly/readwrite) for contained sessions |
+| `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
 can't pass on code that hides a 200-line function or 30 functions in one file.

@@ -114,11 +114,34 @@ def cmd_stopguard(data: dict) -> int:
     return 0
 
 
+def cmd_contain(data: dict) -> int:
+    """PreToolUse(Edit|Write): block writes to blocked/readonly paths when a
+    contained session is active. Exit 2 blocks the write."""
+    fp = (data.get("tool_input") or {}).get("file_path", "")
+    if not fp:
+        return 0
+    from inertia_forge.containment import classify, is_write_allowed
+    if not is_write_allowed(fp):
+        try:
+            from inertia_forge.bypass_prevention import log_behavioral_event
+            log_behavioral_event("containment_blocked", f"write blocked: {fp}")
+        except Exception:
+            pass
+        print(
+            f"BLOCKED BY CONTAINMENT: '{fp}' is {classify(fp)} — not writable "
+            "in this contained session.",
+            file=sys.stderr,
+        )
+        return 2
+    return 0
+
+
 _COMMANDS = {
     "status": cmd_status,
     "autostart": cmd_autostart,
     "gate": cmd_gate,
     "stopguard": cmd_stopguard,
+    "contain": cmd_contain,
 }
 
 

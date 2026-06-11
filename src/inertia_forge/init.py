@@ -27,6 +27,7 @@ _WIRING = [
     ("PreToolUse", "Bash", "enforce-forge-gate.sh"),
     ("Stop", None, "prevent-forge-stop.sh"),
     ("PreCompact", None, "pack-on-compact.sh"),
+    ("PreToolUse", "Edit|Write", "enforce-containment.sh"),
 ]
 
 
