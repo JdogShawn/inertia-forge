@@ -74,6 +74,7 @@ inertia-forge status
 | `inertia-forge standup [--since]` | daily summary: git commits + tasks + last/next + tokens |
 | `inertia-forge config get/set/unset/list` | typed forge settings (`.forge/config.json`) |
 | `inertia-forge contain on/off/set/check/status` | file-access tiers (blocked/readonly/readwrite) for contained sessions |
+| `inertia-forge sandbox status/init/check` | command policy — block catastrophic ops, flag risky ones (gate-enforced) |
 | `inertia-forge timer start/stop/status/report` | work-time tracking |
 | `inertia-forge cache set/get/list/rm/clear` | context blob cache (`.forge/cache/`) |
 | `inertia-forge subagent list/create/show/validate/rm` | manage Claude Code subagent definitions |
@@ -175,8 +176,9 @@ can require its doc be *read* before its gates count, via `doc_reading` mode +
 `inertia-forge read <skill>`.
 
 `inertia-forge init` installs the full kit into a project: the 7 agents, the
-skill docs, **slash commands** (`/forge-plan`, `/forge-build`, `/forge-review`,
-`/forge-ship`, `/ignite`), the **architecture rules** doc, **per-agent memory**
+skill docs, **slash commands** (`/ignite` · `/chart` · `/drive` · `/calibrate` ·
+`/fortify` · `/prove` · `/trace` · `/map` · `/launch`), the **architecture
+rules** doc, **per-agent memory**
 (`.claude/agent-memory/`), and a forge-aware **CLAUDE.md** + `.forge/context/`
 docs — nothing overwritten if it already exists.
 

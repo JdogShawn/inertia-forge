@@ -30,7 +30,7 @@ class TestFullInit:
         c = tmp_path / ".claude"
         assert (c / "agents" / "piston.md").exists()
         assert (c / "skills" / "reviewing-code" / "SKILL.md").exists()
-        assert (c / "commands" / "forge-build.md").exists()
+        assert (c / "commands" / "drive.md").exists()
         assert (c / "rules" / "architecture.md").exists()
         assert (c / "agent-memory" / "vector" / "MEMORY.md").exists()
         assert (tmp_path / "CLAUDE.md").exists()

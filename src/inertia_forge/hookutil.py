@@ -98,6 +98,33 @@ def cmd_gate(data: dict) -> int:
                     file=sys.stderr,
                 )
                 return 2
+
+    # Command-policy safety layer (.forge/sandbox.yaml).
+    from inertia_forge.sandbox import classify
+    tier = classify(command)
+    if tier == "blocked":
+        try:
+            from inertia_forge.bypass_prevention import log_behavioral_event
+            log_behavioral_event("sandbox_blocked", f"blocked: {command.strip()[:120]}")
+        except Exception:
+            pass
+        print(f"BLOCKED BY COMMAND POLICY: catastrophic op refused — {command.strip()[:120]}",
+              file=sys.stderr)
+        return 2
+    if tier == "review":
+        print(f"FORGE WARNING (review): risky command — {command.strip()[:120]}", file=sys.stderr)
+    return 0
+
+
+def cmd_permission_denied(data: dict) -> int:
+    """Log a Claude Code permission-denied event to the audit trail (signal only)."""
+    try:
+        from inertia_forge.bypass_prevention import log_behavioral_event
+        tool = data.get("tool_name", "?")
+        reason = data.get("reason", "")
+        log_behavioral_event("permission_denied", f"{tool}: {reason}"[:160])
+    except Exception:
+        pass
     return 0
 
 
@@ -142,6 +169,7 @@ _COMMANDS = {
     "gate": cmd_gate,
     "stopguard": cmd_stopguard,
     "contain": cmd_contain,
+    "permission-denied": cmd_permission_denied,
 }
 
 

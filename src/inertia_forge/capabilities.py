@@ -15,7 +15,7 @@ _COMMAND_GROUPS = {
     "session lifecycle": ["start", "record-phase", "status", "close", "doctor"],
     "continuity & audit": ["state", "standup", "pack", "log", "memory", "cache"],
     "agents & skills": ["agents", "skills", "read"],
-    "enforcement": ["contain", "orchestrate", "init"],
+    "enforcement": ["contain", "sandbox", "orchestrate", "init"],
     "ops": ["metrics", "timer", "config", "benchmark", "template", "migrate", "mcp", "capabilities"],
 }
 

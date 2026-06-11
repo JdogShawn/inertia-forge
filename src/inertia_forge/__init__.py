@@ -36,7 +36,7 @@ from inertia_forge.skill_registry import (
     validate_skill_name,
 )
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 __all__ = [
     "ForgeSkillBridge",

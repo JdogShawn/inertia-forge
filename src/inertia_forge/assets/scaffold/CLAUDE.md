@@ -5,12 +5,14 @@ follows a **skill** methodology, and the **forge** gates the result — the sess
 closes only when every blocking gate is green. There is no escape hatch.
 
 ## The loop
-1. **Plan** — `/forge-plan <goal>` (Vector) → a gated plan + well-formed tasks.
-2. **Build** — `/forge-build` (Piston) → test-first; drive each task to green.
-3. **Review** — `/forge-review` (Caliper) → measure the change against the spec.
-4. **Ship** — `/forge-ship` → project gate (`inertia-forge check`) + PR.
+1. **`/chart <goal>`** (Vector) → a gated plan + well-formed tasks.
+2. **`/drive`** (Piston) → test-first; drive each task to green.
+3. **`/calibrate`** (Caliper) → measure the change against the spec.
+4. **`/launch`** → project gate (`inertia-forge check`) + PR.
 
-Or start from a backlog: `/ignite <backlog.md>`.
+Or start from a backlog: **`/ignite <backlog.md>`**. Specialist commands:
+**`/fortify`** (security), **`/prove`** (QA), **`/trace`** (root-cause),
+**`/map`** (cross-module ripple).
 
 ## Non-negotiables
 - **TDD** — a failing test before implementation, every time.
