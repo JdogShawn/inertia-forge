@@ -58,6 +58,12 @@ _DISPATCH = {
     "learn": ("inertia_forge.learn", "run_learn"),
     "standup": ("inertia_forge.standup", "run_standup"),
     "contain": ("inertia_forge.containment", "run_contain"),
+    "timer": ("inertia_forge.timer", "run_timer"),
+    "cache": ("inertia_forge.cache", "run_cache"),
+    "subagent": ("inertia_forge.subagent", "run_subagent"),
+    "template": ("inertia_forge.template", "run_template"),
+    "migrate": ("inertia_forge.migrate", "run_migrate"),
+    "mcp": ("inertia_forge.mcp", "run_mcp"),
 }
 
 

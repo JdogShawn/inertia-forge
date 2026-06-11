@@ -71,6 +71,12 @@ inertia-forge status
 | `inertia-forge standup [--since]` | daily summary: git commits + tasks + last/next + tokens |
 | `inertia-forge config get/set/unset/list` | typed forge settings (`.forge/config.json`) |
 | `inertia-forge contain on/off/set/check/status` | file-access tiers (blocked/readonly/readwrite) for contained sessions |
+| `inertia-forge timer start/stop/status/report` | work-time tracking |
+| `inertia-forge cache set/get/list/rm/clear` | context blob cache (`.forge/cache/`) |
+| `inertia-forge subagent list/create/show/validate/rm` | manage Claude Code subagent definitions |
+| `inertia-forge template new/list` | scaffold a forge-ready project |
+| `inertia-forge migrate status/run` | versioned `.forge` schema migrations |
+| `inertia-forge mcp serve/tools` | MCP server exposing the forge's tools to any client |
 | `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
