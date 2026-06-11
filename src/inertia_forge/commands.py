@@ -55,11 +55,14 @@ def run_verify(argv: list[str]) -> int:
 
     parser = argparse.ArgumentParser(prog="inertia-forge verify")
     parser.add_argument("target", nargs="?", default=".", help="test dir (default: .)")
+    parser.add_argument("--cov", metavar="PKG", help="measure coverage of PKG (needs pytest-cov)")
     args = parser.parse_args(argv)
+    cmd = [sys.executable, "-m", "pytest", args.target, "--tb=short", "-q"]
+    if args.cov:
+        cmd += [f"--cov={args.cov}", "--cov-report=term-missing"]
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", args.target, "--tb=short", "-q"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
     except FileNotFoundError:
         print("pytest not available — `pip install pytest`", file=sys.stderr)

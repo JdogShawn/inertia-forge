@@ -19,7 +19,7 @@ dependencies = [
 # `task_management` evidence mode verifies real plan/task/AC state by shelling
 # out to bpsai-pair. Install this extra to use it.
 paircoder = ["bpsai-pair"]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0"]
 
 [project.scripts]
 inertia-forge = "inertia_forge.cli:main"
