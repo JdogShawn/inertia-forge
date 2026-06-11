@@ -6,6 +6,7 @@ standalone commands — no bpsai-pair required.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -130,3 +131,128 @@ def run_status(_argv: list[str]) -> int:
     print(f"last:   {data['last'] or '(none)'}")
     print(f"next:   {data['next'] or '(none)'}")
     return 0
+
+
+# ── log (audit trail) ────────────────────────────────────────────────
+def run_log(argv: list[str]) -> int:
+    """inertia-forge log [-n N] [--claims] — view the forge audit trail."""
+    from inertia_forge.bypass_prevention import read_behavioral_log
+
+    parser = argparse.ArgumentParser(prog="inertia-forge log")
+    parser.add_argument("-n", type=int, default=20, help="entries to show")
+    parser.add_argument("--claims", action="store_true", help="show the claims log")
+    args = parser.parse_args(argv)
+    if args.claims:
+        p = Path(".forge") / "claims.jsonl"
+        lines = p.read_text(encoding="utf-8").splitlines()[-args.n:] if p.exists() else []
+        print("\n".join(lines) if lines else "(no claims)")
+        return 0
+    entries = read_behavioral_log(args.n)
+    if not entries:
+        print("(no audit events)")
+        return 0
+    for e in entries:
+        print(f"{e.get('timestamp', '?')}  {e.get('type', '?')}: {e.get('details', '')}")
+    return 0
+
+
+# ── read (mark methodology doc read) ─────────────────────────────────
+def run_read(argv: list[str]) -> int:
+    """inertia-forge read <skill> — mark the skill's methodology doc as read."""
+    from inertia_forge.doc_reading import mark_read
+    from inertia_forge.skill_registry import get_skill, validate_skill_name
+
+    parser = argparse.ArgumentParser(prog="inertia-forge read")
+    parser.add_argument("skill")
+    args = parser.parse_args(argv)
+    if not validate_skill_name(args.skill):
+        print(f"unknown skill: {args.skill}")
+        return 1
+    doc = get_skill(args.skill).doc
+    if doc and not Path(doc).is_file():
+        print(f"declared doc not found: {doc}")
+        return 1
+    mark_read(args.skill)
+    print(f"marked {args.skill} as read" + (f" ({doc})" if doc else ""))
+    return 0
+
+
+# ── pack (context handoff) ───────────────────────────────────────────
+def run_pack(_argv: list[str]) -> int:
+    """inertia-forge pack — bundle state + plan + tasks + audit to .forge/context_pack.md."""
+    from inertia_forge import state as st, tasks as tk
+    from inertia_forge.bypass_prevention import read_behavioral_log
+    from inertia_forge.completion_lock import get_forge_status
+
+    plan = tk.get_plan()
+    lines = ["# Forge Context Pack", "",
+             f"**Forge:** {get_forge_status() or 'no active session'}",
+             f"**Plan:** {plan['type'] + ' — ' + plan['title'] if plan else '(none)'}"]
+    tasks = tk.list_tasks()
+    if tasks:
+        lines.append("\n## Tasks")
+        for x in tasks:
+            met = sum(1 for c in x["acceptance_criteria"] if c["done"])
+            lines.append(f"- {x['id']} [{x['status']}] AC {met}/{len(x['acceptance_criteria'])} — {x['title']}")
+    data = st.load()
+    lines += ["", "## Continuity", f"- last: {data['last'] or '(none)'}",
+              f"- next: {data['next'] or '(none)'}"]
+    audit = read_behavioral_log(10)
+    if audit:
+        lines += ["", "## Recent audit"] + [f"- {e.get('type')}: {e.get('details')}" for e in audit]
+    out = Path(".forge") / "context_pack.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"wrote {out}")
+    return 0
+
+
+# ── check (project-level gate — beyond skills) ───────────────────────
+_SECRET_RE = re.compile(
+    r"(password|secret|api[_-]?key|token)\s*[:=]\s*['\"][^'\"]{6,}"
+    r"|BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16}",
+    re.IGNORECASE,
+)
+_SCAN_SUFFIXES = {".py", ".env", ".yaml", ".yml", ".json", ".toml", ".sh", ".cfg", ".ini"}
+
+
+def _scan_secrets(path: Path) -> list[dict]:
+    files = [path] if path.is_file() else [
+        f for f in path.rglob("*")
+        if f.suffix in _SCAN_SUFFIXES
+        and not any(skip in str(f) for skip in (".forge", "__pycache__", ".git"))
+    ]
+    findings: list[dict] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            if not line.strip().startswith("#") and _SECRET_RE.search(line):
+                findings.append({"severity": "P0", "rule": "possible_secret",
+                                 "file": str(f), "line": i,
+                                 "message": f"{f.name}:{i}: possible hardcoded secret"})
+    return findings
+
+
+def run_check(argv: list[str]) -> int:
+    """inertia-forge check [path] [--tests DIR] — project gate: arch + secrets (+ tests).
+
+    A session-less quality gate (pre-commit / CI), enforcing project invariants
+    rather than a skill's methodology — the forge beyond skills.
+    """
+    from inertia_forge.independent_analyzer import analyze_directory, analyze_file
+
+    parser = argparse.ArgumentParser(prog="inertia-forge check")
+    parser.add_argument("path", nargs="?", default=".")
+    parser.add_argument("--tests", help="also run pytest on this dir")
+    args = parser.parse_args(argv)
+    p = Path(args.path)
+    findings = (analyze_directory(p) if p.is_dir() else analyze_file(p)) + _scan_secrets(p)
+    rc = _print_findings(findings)
+    if args.tests:
+        print("\n-- tests --")
+        if run_verify([args.tests]) != 0:
+            rc = 1
+    return rc

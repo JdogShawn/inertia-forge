@@ -67,6 +67,18 @@ def _h_list(_a: argparse.Namespace) -> int:
     return 0
 
 
+def _h_set(a: argparse.Namespace) -> int:
+    t.update_task(a.id, title=a.title, complexity=a.complexity, verification=a.verify)
+    print(f"updated {a.id}")
+    return 0
+
+
+def _h_ac_add(a: argparse.Namespace) -> int:
+    task = t.add_acceptance(a.id, a.text)
+    print(f"added AC #{len(task['acceptance_criteria']) - 1} to {a.id}")
+    return 0
+
+
 def _h_budget(_a: argparse.Namespace) -> int:
     tasks = t.list_tasks()
     if not tasks:
@@ -97,6 +109,28 @@ def _h_show(a: argparse.Namespace) -> int:
         print(f"  [{'x' if c['done'] else ' '}] {i}: {c['text']}")
     print(f"  verify: {task['verification']}")
     return 0
+
+
+def _add_edit_parsers(sub) -> None:
+    """Edit/read subcommands (kept out of _build_parser for the line limit)."""
+    se = sub.add_parser("set", help="edit a task (title/complexity/verify)")
+    se.add_argument("id")
+    se.add_argument("--title")
+    se.add_argument("--complexity", type=float)
+    se.add_argument("--verify")
+    se.set_defaults(fn=_h_set)
+
+    aca = sub.add_parser("ac-add", help="append an acceptance criterion")
+    aca.add_argument("id")
+    aca.add_argument("text")
+    aca.set_defaults(fn=_h_ac_add)
+
+    sub.add_parser("list", help="list tasks").set_defaults(fn=_h_list)
+    sub.add_parser("budget", help="complexity rollup").set_defaults(fn=_h_budget)
+
+    sh = sub.add_parser("show", help="show one task")
+    sh.add_argument("id")
+    sh.set_defaults(fn=_h_show)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -131,12 +165,7 @@ def _build_parser() -> argparse.ArgumentParser:
     dn.add_argument("id")
     dn.set_defaults(fn=_h_done)
 
-    sub.add_parser("list", help="list tasks").set_defaults(fn=_h_list)
-    sub.add_parser("budget", help="complexity rollup").set_defaults(fn=_h_budget)
-
-    sh = sub.add_parser("show", help="show one task")
-    sh.add_argument("id")
-    sh.set_defaults(fn=_h_show)
+    _add_edit_parsers(sub)
     return p
 
 

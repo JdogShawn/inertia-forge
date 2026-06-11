@@ -47,13 +47,24 @@ inertia-forge status
 | `inertia-forge record-phase <phase> <target>` | record a phase (auto-closes on all-green) |
 | `inertia-forge status` | forge session + plan + task progress + last/next |
 | `inertia-forge arch <path>…` | deterministic architecture check (file size, **function length, functions/file, imports/file**, stubs, broad-except, …) — exits 1 on any P0 |
-| `inertia-forge verify [dir]` | run pytest + report pass/fail/coverage |
-| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`done`/`list`/`show`/`budget` |
+| `inertia-forge verify [dir] [--cov PKG]` | run pytest + report pass/fail/coverage |
+| `inertia-forge check [path] [--tests DIR]` | **project gate** — arch + secrets (+ tests) as one pass/fail (pre-commit/CI) |
+| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget` |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
+| `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
+| `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
+| `inertia-forge read <skill>` | mark a skill's methodology doc as read (`doc_reading` mode) |
 | `inertia-forge init` | install the Claude Code enforcement hooks |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
 can't pass on code that hides a 200-line function or 30 functions in one file.
+
+### Beyond skills — project gates
+`inertia-forge check` enforces project invariants (architecture limits + secret
+scan + optional tests) **without** a skill session — a session-less gate you can
+drop into a pre-commit hook or CI to fail the build on debt or a leaked secret.
+This extends the forge from "enforce a skill's methodology" to "enforce the
+project's quality bar."
 
 ---
 
@@ -68,6 +79,7 @@ Each skill picks how a phase is proven, in `skill_definitions.yaml`:
 | `enforcer` | dispatch to a **registered** per-skill enforcer; falls back to `stamped` if none | custom adversarial / structured checks |
 | `task_management` | real plan/task/AC state in the forge's **own native store** (zero deps) | planning / task-lifecycle skills |
 | `paircoder` | real plan/task/AC state via **bpsai-pair** (needs the `[paircoder]` extra) | teams already on bpsai-pair |
+| `doc_reading` | the skill's methodology doc was actually read (`inertia-forge read <skill>`) | skills you must not run blind |
 
 Per-phase overrides via `phase_evidence:` (e.g. a code skill whose planning phase should gate on task state).
 

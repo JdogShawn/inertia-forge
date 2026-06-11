@@ -44,6 +44,9 @@ class SkillDefinition:
     name: str
     steps: tuple[str, ...]
     gates: dict[str, str]
+    # Advisory only: the intended max methodology iterations. The forge's gate
+    # model is record-until-green (not iteration-bounded), so loop_max is not a
+    # hard gate — it documents intent and is surfaced by `skills validate`.
     loop_max: int
     target_override: str = ""
     evidence_mode: str = "file_analysis"
@@ -51,6 +54,9 @@ class SkillDefinition:
     # planning phases on task-state while its code phases stay on arch —
     # e.g. designing-and-implementing: {plan_tasks: task_management}.
     phase_evidence: dict[str, str] = field(default_factory=dict)
+    # Optional methodology-doc path; enforced by `doc_reading` evidence mode
+    # (a phase stays red until `inertia-forge read <skill>` marks it read).
+    doc: str = ""
 
 
 # ── Module-level cache ───────────────────────────────────────
@@ -99,6 +105,7 @@ def _load_registry() -> dict[str, SkillDefinition]:
             target_override=str(data.get("target_override", "")),
             evidence_mode=str(data.get("evidence_mode", "file_analysis")),
             phase_evidence=dict(data.get("phase_evidence", {})),
+            doc=str(data.get("doc", "")),
         )
 
     _cache = registry

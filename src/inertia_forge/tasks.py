@@ -133,6 +133,32 @@ def complete_task(task_id: str) -> dict:
     return task
 
 
+def update_task(
+    task_id: str, title: str | None = None,
+    complexity: float | None = None, verification: str | None = None,
+) -> dict:
+    """Edit a task in place (title / complexity / verification)."""
+    data = load()
+    task = _require(data, task_id)
+    if title is not None:
+        task["title"] = title
+    if complexity is not None:
+        task["complexity"] = float(complexity)
+    if verification is not None:
+        task["verification"] = verification
+    save(data)
+    return task
+
+
+def add_acceptance(task_id: str, text: str) -> dict:
+    """Append a new (unchecked) acceptance criterion to a task."""
+    data = load()
+    task = _require(data, task_id)
+    task["acceptance_criteria"].append({"text": text, "done": False})
+    save(data)
+    return task
+
+
 # ── Reads ────────────────────────────────────────────────────────────
 def get_plan() -> dict | None:
     return load().get("plan")

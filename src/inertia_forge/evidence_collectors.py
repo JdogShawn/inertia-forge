@@ -163,6 +163,7 @@ def collect_paircoder_mode(
 
 _KNOWN_EVIDENCE_MODES = (
     "file_analysis", "stamped", "enforcer", "task_management", "paircoder",
+    "doc_reading",
 )
 
 
@@ -193,4 +194,7 @@ def collect(
         return collect_native_task_mode(skill, phase, target, analysis_dir)
     if evidence_mode == "paircoder":
         return collect_paircoder_mode(skill, phase, target, analysis_dir)
+    if evidence_mode == "doc_reading":
+        from inertia_forge.doc_reading import collect_doc_reading
+        return collect_doc_reading(skill, phase, target, analysis_dir)
     return collect_file_analysis(skill, phase, target, analysis_dir)

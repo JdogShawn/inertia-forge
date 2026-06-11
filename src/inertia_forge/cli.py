@@ -7,9 +7,13 @@
   inertia-forge status                 forge session + plan/tasks + last/next
   inertia-forge close                  close (refuses while gates remain)
   inertia-forge arch <path>            deterministic architecture check
-  inertia-forge verify [dir]           run pytest on a target
+  inertia-forge verify [dir] [--cov P] run pytest + report pass/fail/coverage
+  inertia-forge check [path] [--tests] project gate: arch + secrets (+ tests)
   inertia-forge task ...               manage the native task store
   inertia-forge state [--done/--next]  session-continuity ledger
+  inertia-forge log [--claims]         view the audit trail
+  inertia-forge pack                   bundle context to .forge/context_pack.md
+  inertia-forge read <skill>           mark a skill's methodology doc as read
 """
 from __future__ import annotations
 
@@ -57,6 +61,18 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "status":
         from inertia_forge.commands import run_status
         return run_status(argv[1:])
+    if cmd == "log":
+        from inertia_forge.commands import run_log
+        return run_log(argv[1:])
+    if cmd == "read":
+        from inertia_forge.commands import run_read
+        return run_read(argv[1:])
+    if cmd == "pack":
+        from inertia_forge.commands import run_pack
+        return run_pack(argv[1:])
+    if cmd == "check":
+        from inertia_forge.commands import run_check
+        return run_check(argv[1:])
 
     # Delegate session lifecycle (start / record-phase / close) to the bridge
     # CLI — the single sanctioned entry point.
