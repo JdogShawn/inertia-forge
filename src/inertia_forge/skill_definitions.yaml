@@ -15,7 +15,9 @@
 #                   insight/findings, not code (review, audit, investigation).
 #   enforcer        dispatch to a registered per-skill enforcer
 #                   (inertia_forge.register_enforcer); falls back to stamped.
-#   task_management real plan/task/AC state via the [paircoder] extra.
+#   task_management real plan/task/AC state in the forge's NATIVE store
+#                   (manage with `inertia-forge task ...`); zero deps.
+#   paircoder       real plan/task/AC state via bpsai-pair ([paircoder] extra).
 # phase_evidence: {step: mode}  per-phase override (a code skill whose planning
 #                   phase should gate on task state, etc.)
 
@@ -137,8 +139,9 @@ custom_review:
     adversarial_pass: blocking
     verdict: blocking
 
-# ── task_management (needs the [paircoder] extra) ──────────────────────
-# These names match the built-in PairCoder verifiers (plan/task/AC checks).
+# ── task_management (native — zero deps) ───────────────────────────────
+# Phase names match the native verifiers; manage tasks with `inertia-forge task`.
+# (Switch evidence_mode to `paircoder` to verify bpsai-pair state instead.)
 pc_plan:
   loop_max: 0
   evidence_mode: task_management

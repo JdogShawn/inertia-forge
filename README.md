@@ -12,7 +12,7 @@ Zero LLM calls. Pure deterministic algorithms.
 
 ```bash
 pip install inertia-forge
-# optional: real plan/task/AC gating via bpsai-pair
+# optional extra: the bpsai-pair task backend (native task_management needs nothing)
 pip install "inertia-forge[paircoder]"
 ```
 
@@ -49,7 +49,8 @@ Each skill picks how a phase is proven, in `skill_definitions.yaml`:
 | `file_analysis` | deterministic code analysis of the target's `.py` files (built-in arch rules: file size, function length, stubs, broad-except, wildcard imports, …) | skills that **produce/modify code** |
 | `stamped` | SHA-256 methodology stamp — the phase ran | skills whose output is **insight/findings**, not code (review, audit, investigation) |
 | `enforcer` | dispatch to a **registered** per-skill enforcer; falls back to `stamped` if none | custom adversarial / structured checks |
-| `task_management` | real plan/task/AC state (needs `[paircoder]` extra) | planning / task-lifecycle skills |
+| `task_management` | real plan/task/AC state in the forge's **own native store** (zero deps) | planning / task-lifecycle skills |
+| `paircoder` | real plan/task/AC state via **bpsai-pair** (needs the `[paircoder]` extra) | teams already on bpsai-pair |
 
 Per-phase overrides via `phase_evidence:` (e.g. a code skill whose planning phase should gate on task state).
 
@@ -58,6 +59,26 @@ Per-phase overrides via `phase_evidence:` (e.g. a code skill whose planning phas
 from inertia_forge import register_enforcer
 register_enforcer("custom_review", MyEnforcer)   # cls(target); record_step/phase(...)
 ```
+
+---
+
+## Native task management (`task_management` mode)
+
+The forge ships its **own** plan/task store at `.forge/forge_tasks.json` — no external tools. Skills on `task_management` mode gate on this real state, so a planning gate can't close until tasks actually exist (well-formed IDs, acceptance criteria, a verification command), and a `start_task` gate can't close until the active task is genuinely `done` with all AC met.
+
+```bash
+inertia-forge task plan  --type feature --title "Checkout v2"
+inertia-forge task add   T1.1 --title "Cart totals" --complexity 8 \
+                         --ac "totals correct" --ac "tests pass" --verify "pytest tests/cart"
+inertia-forge task start T1.1          # active + in_progress
+inertia-forge task ac    T1.1 --all    # check off acceptance criteria
+inertia-forge task done  T1.1          # refuses unless every AC is met
+inertia-forge task list
+```
+
+Verifier rules (phase-keyed, so any skill using these step names is gated): `budget_check` (every task estimated 0–100), `create_plan` (a valid-typed plan exists), `add_tasks` (≥1 well-formed task with AC + verification), `preflight` (active task is `in_progress`), `complete` (active task `done`, all AC met).
+
+**Already on bpsai-pair?** Use `evidence_mode: paircoder` instead (install `inertia-forge[paircoder]`) and the same gates verify bpsai-pair's `.paircoder/` state. Both backends ship; pick per skill.
 
 ---
 
@@ -84,9 +105,11 @@ my_review:
 ## Claude Code enforcement (hooks)
 
 ```bash
-cd your-project
-inertia-forge init        # installs hooks into .claude/ and wires settings.json
+cd /path/to/your/project   # IMPORTANT: run init from your project root —
+inertia-forge init         # hooks install into THIS directory's .claude/
 ```
+
+> `inertia-forge init` is directory-scoped: it writes `.claude/hooks/` and patches `.claude/settings.json` in the **current** directory. Always `cd` into the project you want enforced first. It's idempotent — safe to re-run after upgrades.
 
 This wires four hooks so the forge enforces itself inside Claude Code:
 

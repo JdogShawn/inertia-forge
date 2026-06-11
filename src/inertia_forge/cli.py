@@ -31,6 +31,9 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "init":
         from inertia_forge.init import run_init
         return run_init(argv[1:])
+    if argv and argv[0] == "task":
+        from inertia_forge.task_cli import run_task
+        return run_task(argv[1:])
     if argv and argv[0] in ("skills", "list"):
         return _list_skills()
 

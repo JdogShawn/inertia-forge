@@ -128,21 +128,32 @@ def _resolve_enforcer(skill: str):
     return _ENFORCER_REGISTRY.get(skill.replace("-", "_"))
 
 
+def collect_native_task_mode(
+    skill: str, phase: str, target: str, analysis_dir: Path,
+) -> tuple[list[dict], str]:
+    """task_management mode (native) — verify the forge's OWN task store.
+
+    Zero external dependencies: reads .forge/forge_tasks.json via
+    inertia_forge.tasks. This is the default task_management backend.
+    """
+    from inertia_forge.task_evidence import collect_native_task
+    return collect_native_task(skill, phase, target, analysis_dir)
+
+
 def collect_paircoder_mode(
     skill: str, phase: str, target: str, analysis_dir: Path,
 ) -> tuple[list[dict], str]:
-    """task_management mode — verify real bpsai-pair plan/task/AC state.
+    """`paircoder` mode — verify real bpsai-pair plan/task/AC state.
 
-    Requires the optional [paircoder] extra at runtime (it shells bpsai-pair).
-    If the subpackage can't be imported, degrade to stamped so the gate still
-    progresses rather than blocking on a missing optional dependency.
+    Opt-in for users who manage tasks with bpsai-pair (needs the [paircoder]
+    extra at runtime). If the subpackage can't be imported, degrade to stamped.
     """
     try:
         from inertia_forge.paircoder.evidence import collect_paircoder
     except ImportError:
         import sys
         print(
-            "WARNING: evidence_mode 'task_management' needs the optional "
+            "WARNING: evidence_mode 'paircoder' needs the optional "
             "[paircoder] extra; falling back to stamped.",
             file=sys.stderr,
         )
@@ -151,7 +162,7 @@ def collect_paircoder_mode(
 
 
 _KNOWN_EVIDENCE_MODES = (
-    "file_analysis", "stamped", "enforcer", "task_management",
+    "file_analysis", "stamped", "enforcer", "task_management", "paircoder",
 )
 
 
@@ -179,5 +190,7 @@ def collect(
     if evidence_mode == "enforcer":
         return collect_enforcer(skill, phase, target, analysis_dir)
     if evidence_mode == "task_management":
+        return collect_native_task_mode(skill, phase, target, analysis_dir)
+    if evidence_mode == "paircoder":
         return collect_paircoder_mode(skill, phase, target, analysis_dir)
     return collect_file_analysis(skill, phase, target, analysis_dir)
