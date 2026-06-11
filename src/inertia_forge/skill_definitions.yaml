@@ -1,0 +1,163 @@
+# inertia-forge — default skill registry (GENERIC STARTER)
+#
+# Each skill declares ordered `steps`, quality `gates`, an optional `loop_max`,
+# and an `evidence_mode`. Gate types: blocking | checkpoint | advisory.
+# Only `blocking` gates hold the session open.
+#
+# Override this file per-project:
+#   - set INERTIA_FORGE_SKILLS=/path/to/your/skills.yaml, or
+#   - drop a `forge_skills.yaml` (or `.forge/skills.yaml`) in your project root.
+#
+# evidence_mode:
+#   file_analysis   (default) deterministic code analysis of the target's .py
+#                   files — for skills that PRODUCE/MODIFY code.
+#   stamped         SHA-256 methodology stamp — for skills whose output is
+#                   insight/findings, not code (review, audit, investigation).
+#   enforcer        dispatch to a registered per-skill enforcer
+#                   (inertia_forge.register_enforcer); falls back to stamped.
+#   task_management real plan/task/AC state via the [paircoder] extra.
+# phase_evidence: {step: mode}  per-phase override (a code skill whose planning
+#                   phase should gate on task state, etc.)
+
+# ── Code-producing skills (file_analysis) ──────────────────────────────
+implementing_with_tdd:
+  loop_max: 0
+  steps:
+    - write_failing_test
+    - write_minimal_code
+    - verify_green
+    - refactor
+    - arch_check
+  gates:
+    write_failing_test: blocking
+    verify_green: blocking
+    arch_check: blocking
+
+refactoring:
+  loop_max: 3
+  steps:
+    - scan
+    - split_files
+    - reduce_functions
+    - verify
+  gates:
+    verify: blocking
+
+finishing_branches:
+  loop_max: 0
+  steps:
+    - verify_tests
+    - check_coverage
+    - update_docs
+    - create_pr
+  gates:
+    verify_tests: blocking
+
+releasing_versions:
+  loop_max: 0
+  steps:
+    - validate_ready
+    - bump_version
+    - update_changelog
+    - security_check
+    - tag_release
+  gates:
+    validate_ready: blocking
+    security_check: blocking
+
+# Mixed skill: code phases stay file_analysis; the planning phase gates on real
+# task state when the [paircoder] extra is present (Bundle G per-phase mode).
+designing_and_implementing:
+  loop_max: 0
+  phase_evidence:
+    plan_tasks: task_management
+  steps:
+    - clarify_requirements
+    - design_approach
+    - plan_tasks
+    - implement
+    - verify
+  gates:
+    clarify_requirements: blocking
+    plan_tasks: blocking
+    verify: blocking
+
+# ── Reasoning / audit skills (stamped) ─────────────────────────────────
+reviewing_code:
+  loop_max: 0
+  evidence_mode: stamped
+  steps:
+    - read_changes
+    - check_correctness
+    - check_security
+    - check_performance
+    - check_style
+    - provide_feedback
+  gates:
+    check_correctness: blocking
+    check_security: blocking
+
+security_audit:
+  loop_max: 1
+  evidence_mode: stamped
+  steps:
+    - scan_owasp
+    - check_secrets
+    - check_deps
+    - report
+  gates:
+    scan_owasp: blocking
+    report: blocking
+
+investigating:
+  loop_max: 0
+  evidence_mode: stamped
+  steps:
+    - observe
+    - hypothesize
+    - deduce
+    - verify
+  gates:
+    observe: blocking
+    deduce: blocking
+    verify: blocking
+
+# ── Enforcer mode (pluggable) ──────────────────────────────────────────
+# `enforcer` dispatches to a class registered via
+# inertia_forge.register_enforcer("custom_review", MyEnforcer). With none
+# registered it transparently falls back to stamped, so this is safe to ship.
+custom_review:
+  loop_max: 0
+  evidence_mode: enforcer
+  steps:
+    - gather
+    - adversarial_pass
+    - verdict
+  gates:
+    adversarial_pass: blocking
+    verdict: blocking
+
+# ── task_management (needs the [paircoder] extra) ──────────────────────
+# These names match the built-in PairCoder verifiers (plan/task/AC checks).
+pc_plan:
+  loop_max: 0
+  evidence_mode: task_management
+  steps:
+    - budget_check
+    - create_plan
+    - add_tasks
+  gates:
+    budget_check: blocking
+    create_plan: blocking
+    add_tasks: blocking
+
+start_task:
+  loop_max: 0
+  evidence_mode: task_management
+  steps:
+    - preflight
+    - execute
+    - complete
+  gates:
+    preflight: blocking
+    complete: blocking

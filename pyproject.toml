@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inertia-forge"
+version = "0.1.0"
+description = "A project-agnostic, deterministic skill-enforcement engine — the only way out is to do the work."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "INERTIA" }]
+keywords = ["forge", "enforcement", "agents", "claude-code", "tdd", "gates", "quality"]
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# `task_management` evidence mode verifies real plan/task/AC state by shelling
+# out to bpsai-pair. Install this extra to use it.
+paircoder = ["bpsai-pair"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+inertia-forge = "inertia_forge.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/inertia/inertia-forge"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+inertia_forge = ["skill_definitions.yaml", "hooks/*.sh"]
