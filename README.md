@@ -62,6 +62,10 @@ inertia-forge status
 | `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline |
 | `inertia-forge metrics add/report/set-rate` | token usage tracking + cost from configured rates |
 | `inertia-forge benchmark [path]` | time the forge's own operations |
+| `inertia-forge feature <name> [--no-branch]` | start a feature: git branch + plan + task + next |
+| `inertia-forge learn <text> [--tag T]` / `learn list/search` | capture/list/search insights (`.forge/knowledge.jsonl`) |
+| `inertia-forge standup [--since]` | daily summary: git commits + tasks + last/next + tokens |
+| `inertia-forge config get/set/unset/list` | typed forge settings (`.forge/config.json`) |
 | `inertia-forge init` | install the Claude Code enforcement hooks |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate

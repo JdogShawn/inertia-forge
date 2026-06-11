@@ -53,6 +53,10 @@ _DISPATCH = {
     "intent": ("inertia_forge.intent", "run_intent"),
     "orchestrate": ("inertia_forge.orchestrate", "run_orchestrate"),
     "benchmark": ("inertia_forge.benchmark", "run_benchmark"),
+    "config": ("inertia_forge.config", "run_config"),
+    "feature": ("inertia_forge.feature", "run_feature"),
+    "learn": ("inertia_forge.learn", "run_learn"),
+    "standup": ("inertia_forge.standup", "run_standup"),
 }
 
 
