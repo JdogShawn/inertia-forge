@@ -51,6 +51,8 @@ _DISPATCH = {
     "metrics": ("inertia_forge.metrics", "run_metrics"),
     "ignite": ("inertia_forge.ignite", "run_ignite"),
     "agents": ("inertia_forge.assets", "run_agents"),
+    "memory": ("inertia_forge.memory", "run_memory"),
+    "capabilities": ("inertia_forge.capabilities", "run_capabilities"),
     "intent": ("inertia_forge.intent", "run_intent"),
     "orchestrate": ("inertia_forge.orchestrate", "run_orchestrate"),
     "benchmark": ("inertia_forge.benchmark", "run_benchmark"),

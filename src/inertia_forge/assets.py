@@ -12,6 +12,18 @@ from pathlib import Path
 ASSETS = Path(__file__).parent / "assets"
 AGENTS = ASSETS / "agents"
 SKILLS = ASSETS / "skills"
+COMMANDS = ASSETS / "commands"
+RULES = ASSETS / "rules"
+SCAFFOLD = ASSETS / "scaffold"
+
+
+def _install_flat(src_dir: Path, dst_dir: Path) -> list[str]:
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    out = []
+    for src in src_dir.glob("*.md"):
+        shutil.copy2(src, dst_dir / src.name)
+        out.append(src.stem)
+    return sorted(out)
 
 
 def agent_names() -> list[str]:
@@ -40,6 +52,47 @@ def install_skills(target: Path) -> list[str]:
         dst = target / ".claude" / "skills" / name
         dst.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SKILLS / name / "SKILL.md", dst / "SKILL.md")
+        out.append(name)
+    return out
+
+
+def install_commands(target: Path) -> list[str]:
+    """Copy INERTIA slash commands into <target>/.claude/commands/."""
+    return _install_flat(COMMANDS, target / ".claude" / "commands")
+
+
+def install_rules(target: Path) -> list[str]:
+    """Copy the architecture rules into <target>/.claude/rules/."""
+    return _install_flat(RULES, target / ".claude" / "rules")
+
+
+def install_scaffold(target: Path) -> list[str]:
+    """Write CLAUDE.md (root) + .forge/context/ docs. Never overwrites existing."""
+    written = []
+    claude = target / "CLAUDE.md"
+    if not claude.exists():
+        shutil.copy2(SCAFFOLD / "CLAUDE.md", claude)
+        written.append("CLAUDE.md")
+    ctx_dst = target / ".forge" / "context"
+    ctx_dst.mkdir(parents=True, exist_ok=True)
+    for src in (SCAFFOLD / "context").glob("*.md"):
+        dst = ctx_dst / src.name
+        if not dst.exists():
+            shutil.copy2(src, dst)
+            written.append(f"context/{src.name}")
+    return written
+
+
+def install_agent_memory(target: Path) -> list[str]:
+    """Seed a starter MEMORY.md for each bundled agent under .claude/agent-memory/."""
+    out = []
+    for name in agent_names():
+        path = target / ".claude" / "agent-memory" / name / "MEMORY.md"
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                f"# {name} — memory\n\nDurable lessons this agent has learned "
+                "about this project.\n\n", encoding="utf-8")
         out.append(name)
     return out
 

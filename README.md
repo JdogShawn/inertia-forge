@@ -64,6 +64,8 @@ inertia-forge status
 | `inertia-forge intent "<text>"` | rule-based intent → plan type + suggested skill |
 | `inertia-forge ignite <backlog.md>` | set a backlog in motion → plan + tasks + suggested agent |
 | `inertia-forge agents [show/install]` | the bundled INERTIA agent roster |
+| `inertia-forge memory add/show/list <agent>` | per-agent persistent memory (`.claude/agent-memory/`) |
+| `inertia-forge capabilities [--json]` | discovery manifest — the whole toolkit for an LLM to read |
 | `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline |
 | `inertia-forge metrics add/report/set-rate` | token usage tracking + cost from configured rates |
 | `inertia-forge benchmark [path]` | time the forge's own operations |
@@ -172,10 +174,17 @@ gated skill (implementing-with-tdd, reviewing-code, security-audit, …). A skil
 can require its doc be *read* before its gates count, via `doc_reading` mode +
 `inertia-forge read <skill>`.
 
+`inertia-forge init` installs the full kit into a project: the 7 agents, the
+skill docs, **slash commands** (`/forge-plan`, `/forge-build`, `/forge-review`,
+`/forge-ship`, `/ignite`), the **architecture rules** doc, **per-agent memory**
+(`.claude/agent-memory/`), and a forge-aware **CLAUDE.md** + `.forge/context/`
+docs — nothing overwritten if it already exists.
+
 ```bash
 inertia-forge agents              # list the roster
 inertia-forge agents show piston  # read an agent's role
-inertia-forge agents install .    # drop agents + skill docs into ./.claude/
+inertia-forge memory show piston  # what Piston has learned here
+inertia-forge capabilities        # the whole toolkit, for an LLM to discover
 ```
 
 ---

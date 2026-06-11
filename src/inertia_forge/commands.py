@@ -223,12 +223,23 @@ _SECRET_RE = re.compile(
 _SCAN_SUFFIXES = {".py", ".env", ".yaml", ".yml", ".json", ".toml", ".sh", ".cfg", ".ini"}
 
 
+def _secret_allowlist() -> list[str]:
+    """Substrings to ignore in the secret scan — one per line in
+    `.forge/secret-allowlist.txt` (suppresses known false positives)."""
+    p = Path(".forge") / "secret-allowlist.txt"
+    if not p.exists():
+        return []
+    return [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines()
+            if ln.strip() and not ln.startswith("#")]
+
+
 def _scan_secrets(path: Path) -> list[dict]:
     files = [path] if path.is_file() else [
         f for f in path.rglob("*")
         if f.suffix in _SCAN_SUFFIXES
         and not any(skip in str(f) for skip in (".forge", "__pycache__", ".git"))
     ]
+    allow = _secret_allowlist()
     findings: list[dict] = []
     for f in files:
         try:
@@ -236,10 +247,13 @@ def _scan_secrets(path: Path) -> list[dict]:
         except OSError:
             continue
         for i, line in enumerate(text.splitlines(), 1):
-            if not line.strip().startswith("#") and _SECRET_RE.search(line):
-                findings.append({"severity": "P0", "rule": "possible_secret",
-                                 "file": str(f), "line": i,
-                                 "message": f"{f.name}:{i}: possible hardcoded secret"})
+            if line.strip().startswith("#") or not _SECRET_RE.search(line):
+                continue
+            if any(a in line for a in allow):
+                continue
+            findings.append({"severity": "P0", "rule": "possible_secret",
+                             "file": str(f), "line": i,
+                             "message": f"{f.name}:{i}: possible hardcoded secret"})
     return findings
 
 
