@@ -8,7 +8,6 @@ import json as _json
 import sys
 from pathlib import Path
 
-from inertia_forge import persisted_manifest as pm_mod
 from inertia_forge.persisted_manifest import (
     MANIFEST_DIR,
     PersistedManifest,

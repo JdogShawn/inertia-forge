@@ -86,6 +86,11 @@ def cmd_gate(data: dict) -> int:
             continue
         for pat in _BLOCKED:
             if re.search(pat, seg):
+                try:
+                    from inertia_forge.bypass_prevention import log_behavioral_event
+                    log_behavioral_event("gate_blocked", f"blocked segment: {seg.strip()[:120]}")
+                except Exception:
+                    pass
                 print(
                     "BLOCKED BY FORGE GATE: forge sessions close only by "
                     "recording all blocking gates — there is no manual "

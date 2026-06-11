@@ -18,7 +18,6 @@ import sys
 from pathlib import Path
 
 from inertia_forge import persisted_manifest as pm_mod
-from inertia_forge.independent_analyzer import analyze_directory, compute_evidence_hash
 from inertia_forge.persisted_manifest import PersistedManifest
 from inertia_forge.skill_registry import validate_skill_name
 

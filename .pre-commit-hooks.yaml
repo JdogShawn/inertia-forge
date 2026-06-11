@@ -1,0 +1,22 @@
+# Use inertia-forge as a pre-commit hook in any repo:
+#
+#   repos:
+#     - repo: https://github.com/JdogShawn/inertia-forge
+#       rev: v0.2.0
+#       hooks:
+#         - id: inertia-forge-check        # arch + secrets gate on the repo
+#         - id: inertia-forge-sweep        # (optional) unused-import sweep
+#
+- id: inertia-forge-check
+  name: inertia-forge check (arch + secrets)
+  entry: inertia-forge check
+  language: python
+  pass_filenames: false
+  always_run: true
+
+- id: inertia-forge-sweep
+  name: inertia-forge sweep (unused imports)
+  entry: inertia-forge sweep
+  language: python
+  pass_filenames: false
+  always_run: true

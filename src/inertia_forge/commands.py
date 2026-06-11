@@ -19,7 +19,7 @@ def _print_findings(findings: list[dict]) -> int:
     for f in findings:
         by_sev.setdefault(f.get("severity", "P2"), []).append(f)
     if not findings:
-        print("✓ no findings")
+        print("OK: no findings")
         return 0
     for sev in ("P0", "P1", "P2"):
         for f in by_sev.get(sev, []):
@@ -247,6 +247,7 @@ def run_check(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="inertia-forge check")
     parser.add_argument("path", nargs="?", default=".")
     parser.add_argument("--tests", help="also run pytest on this dir")
+    parser.add_argument("--deps", action="store_true", help="also audit dependencies (pip-audit)")
     args = parser.parse_args(argv)
     p = Path(args.path)
     findings = (analyze_directory(p) if p.is_dir() else analyze_file(p)) + _scan_secrets(p)
@@ -255,4 +256,39 @@ def run_check(argv: list[str]) -> int:
         print("\n-- tests --")
         if run_verify([args.tests]) != 0:
             rc = 1
+    if args.deps:
+        print("\n-- dependencies --")
+        if _scan_deps(p) != 0:
+            rc = 1
     return rc
+
+
+def _scan_deps(path: Path) -> int:
+    """Audit dependencies via pip-audit (optional). Returns its exit code, or 0
+    if pip-audit isn't installed (a missing optional tool shouldn't fail a gate)."""
+    import importlib.util
+    if importlib.util.find_spec("pip_audit") is None:
+        print("scan-deps: pip-audit not installed (optional) — `pip install pip-audit`")
+        return 0
+    cmd = [sys.executable, "-m", "pip_audit", "--progress-spinner=off"]
+    req = path / "requirements.txt"
+    if req.is_file():
+        cmd += ["-r", str(req)]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=300)
+    except (subprocess.TimeoutExpired, OSError):
+        print("scan-deps: pip-audit failed to run", file=sys.stderr)
+        return 0
+    print(result.stdout, end="")
+    if result.stderr.strip():
+        print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
+def run_scan_deps(argv: list[str]) -> int:
+    """inertia-forge scan-deps [path] — dependency vulnerability scan (pip-audit)."""
+    parser = argparse.ArgumentParser(prog="inertia-forge scan-deps")
+    parser.add_argument("path", nargs="?", default=".")
+    args = parser.parse_args(argv)
+    return _scan_deps(Path(args.path))

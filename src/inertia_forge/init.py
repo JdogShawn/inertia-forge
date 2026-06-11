@@ -26,6 +26,7 @@ _WIRING = [
     ("UserPromptSubmit", None, "auto-forge-on-slash-command.sh"),
     ("PreToolUse", "Bash", "enforce-forge-gate.sh"),
     ("Stop", None, "prevent-forge-stop.sh"),
+    ("PreCompact", None, "pack-on-compact.sh"),
 ]
 
 

@@ -42,13 +42,16 @@ inertia-forge status
 
 | command | what it does |
 |---|---|
-| `inertia-forge skills` / `skills validate` | list the registry / validate it's well-formed |
+| `inertia-forge skills` / `skills validate` / `skills export [--format json\|md]` | list / validate / export the registry |
+| `inertia-forge doctor [--fix]` | health check of the forge setup (python, pytest, .forge, registry, hooks) |
 | `inertia-forge start <skill> <target>` | open a forge session |
 | `inertia-forge record-phase <phase> <target>` | record a phase (auto-closes on all-green) |
 | `inertia-forge status` | forge session + plan + task progress + last/next |
 | `inertia-forge arch <path>…` | deterministic architecture check (file size, **function length, functions/file, imports/file**, stubs, broad-except, …) — exits 1 on any P0 |
 | `inertia-forge verify [dir] [--cov PKG]` | run pytest + report pass/fail/coverage |
-| `inertia-forge check [path] [--tests DIR]` | **project gate** — arch + secrets (+ tests) as one pass/fail (pre-commit/CI) |
+| `inertia-forge check [path] [--tests DIR] [--deps]` | **project gate** — arch + secrets (+ tests + dep audit) as one pass/fail (pre-commit/CI) |
+| `inertia-forge sweep [path] [--fix]` | find (or remove) unused imports |
+| `inertia-forge scan-deps [path]` | dependency vulnerability scan (pip-audit, optional) |
 | `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget` |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
@@ -65,6 +68,21 @@ scan + optional tests) **without** a skill session — a session-less gate you c
 drop into a pre-commit hook or CI to fail the build on debt or a leaked secret.
 This extends the forge from "enforce a skill's methodology" to "enforce the
 project's quality bar."
+
+Use it as a **pre-commit hook** in any repo:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/JdogShawn/inertia-forge
+    rev: v0.2.0
+    hooks:
+      - id: inertia-forge-check     # arch + secrets gate
+      - id: inertia-forge-sweep     # unused-import sweep
+```
+
+`inertia-forge init` also wires a **PreCompact** hook so the forge auto-`pack`s
+your context before a Claude Code compaction — continuity survives the squeeze.
 
 ---
 
