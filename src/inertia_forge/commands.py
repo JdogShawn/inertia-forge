@@ -50,17 +50,29 @@ def run_arch(argv: list[str]) -> int:
 
 # ── verify ───────────────────────────────────────────────────────────
 def run_verify(argv: list[str]) -> int:
-    """inertia-forge verify [dir] — run pytest on a target and pass through."""
+    """inertia-forge verify [dir] — run pytest, report pass/fail/coverage."""
+    from inertia_forge.independent_analyzer import parse_pytest_summary
+
     parser = argparse.ArgumentParser(prog="inertia-forge verify")
     parser.add_argument("target", nargs="?", default=".", help="test dir (default: .)")
     args = parser.parse_args(argv)
     try:
-        return subprocess.run(
+        result = subprocess.run(
             [sys.executable, "-m", "pytest", args.target, "--tb=short", "-q"],
-        ).returncode
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
     except FileNotFoundError:
         print("pytest not available — `pip install pytest`", file=sys.stderr)
         return 1
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr.strip():
+        print(result.stderr, end="", file=sys.stderr)
+    s = parse_pytest_summary(result.stdout + result.stderr)
+    cov = f" · coverage {s['coverage']}%" if s["coverage"] is not None else ""
+    print(f"\nVERIFY: {s['passed']} passed · {s['failed']} failed · "
+          f"{s['errors']} errors{cov}")
+    return result.returncode
 
 
 # ── state ────────────────────────────────────────────────────────────
@@ -71,10 +83,19 @@ def run_state(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="inertia-forge state")
     parser.add_argument("--done", default="", help="what was just done")
     parser.add_argument("--next", dest="next_", default="", help="what's next")
+    parser.add_argument("--log", action="store_true", help="show recent history")
     args = parser.parse_args(argv)
     if args.done or args.next_:
         st.set_progress(args.done, args.next_)
     data = st.load()
+    if args.log:
+        hist = data["history"][-10:]
+        if not hist:
+            print("(no history)")
+        for h in hist:
+            print(f"- done: {h['done'] or '(none)'}")
+            print(f"  next: {h['next'] or '(none)'}")
+        return 0
     print(f"last: {data['last'] or '(none)'}")
     print(f"next: {data['next'] or '(none)'}")
     return 0

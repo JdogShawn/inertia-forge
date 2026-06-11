@@ -12,6 +12,7 @@ from __future__ import annotations
 import ast
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -206,25 +207,42 @@ def analyze_file(filepath: Path) -> list[dict]:
     )
 
 
+def parse_pytest_summary(output: str) -> dict:
+    """Parse pytest's summary into {passed, failed, errors, coverage|None}."""
+    def _i(pat: str) -> int:
+        m = re.search(pat, output)
+        return int(m.group(1)) if m else 0
+
+    cov = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", output)
+    return {
+        "passed": _i(r"(\d+) passed"),
+        "failed": _i(r"(\d+) failed"),
+        "errors": _i(r"(\d+) error"),
+        "coverage": int(cov.group(1)) if cov else None,
+    }
+
+
 def run_pytest_check(directory: Path) -> list[dict]:
-    """Run pytest and parse results. PairCoder can't fake pytest output."""
-    findings: list[dict] = []
+    """Run pytest; P0 finding if any test failed or errored. Real output —
+    self-reports can't fake it. Uses the running interpreter (not bare
+    'python', which is absent on python3-only systems)."""
     try:
         result = subprocess.run(
-            ["python", "-m", "pytest", str(directory), "--tb=no", "-q"],
-            capture_output=True, text=True, timeout=120,
+            [sys.executable, "-m", "pytest", str(directory), "--tb=no", "-q"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=300,
         )
-        # Parse last line for "N passed, M failed"
-        for line in result.stdout.splitlines():
-            if "failed" in line:
-                findings.append({"severity": "P0", "rule": "test_failure",
-                                 "file": str(directory), "line": 0,
-                                 "message": f"pytest: {line.strip()}"})
     except (subprocess.TimeoutExpired, FileNotFoundError):
-        findings.append({"severity": "P2", "rule": "pytest_unavailable",
-                         "file": str(directory), "line": 0,
-                         "message": "pytest not available or timed out"})
-    return findings
+        return [{"severity": "P2", "rule": "pytest_unavailable",
+                 "file": str(directory), "line": 0,
+                 "message": "pytest not available or timed out"}]
+    s = parse_pytest_summary(result.stdout + result.stderr)
+    if s["failed"] or s["errors"]:
+        return [{"severity": "P0", "rule": "test_failure",
+                 "file": str(directory), "line": 0,
+                 "message": f"pytest: {s['failed']} failed, {s['errors']} error(s), "
+                            f"{s['passed']} passed"}]
+    return []
 
 
 def compute_evidence_hash(source_files: list[Path]) -> str:

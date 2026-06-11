@@ -94,6 +94,41 @@ class TestStateContinuity:
         assert st.load()["next"] == "write docs"
 
 
+class TestVerify:
+    def test_parse_passed_only(self) -> None:
+        from inertia_forge.independent_analyzer import parse_pytest_summary
+        assert parse_pytest_summary("==== 5 passed in 0.30s ====") == {
+            "passed": 5, "failed": 0, "errors": 0, "coverage": None,
+        }
+
+    def test_parse_failed_and_coverage(self) -> None:
+        from inertia_forge.independent_analyzer import parse_pytest_summary
+        s = parse_pytest_summary("3 passed, 1 failed in 0.5s\nTOTAL  100  5  95%")
+        assert s["passed"] == 3 and s["failed"] == 1 and s["coverage"] == 95
+
+    def test_run_pytest_check_pass_then_fail(self, tmp_path: Path) -> None:
+        from inertia_forge.independent_analyzer import run_pytest_check
+        (tmp_path / "test_ok.py").write_text("def test_a():\n    assert True\n", encoding="utf-8")
+        assert run_pytest_check(tmp_path) == []
+        (tmp_path / "test_bad.py").write_text("def test_b():\n    assert False\n", encoding="utf-8")
+        assert any(f["rule"] == "test_failure" for f in run_pytest_check(tmp_path))
+
+    def test_verify_cli_reports_summary(self, tmp_path: Path, capsys) -> None:
+        (tmp_path / "test_ok.py").write_text("def test_a():\n    assert True\n", encoding="utf-8")
+        rc = main(["verify", str(tmp_path)])
+        out = capsys.readouterr().out
+        assert "VERIFY:" in out and "1 passed" in out
+        assert rc == 0
+
+
+class TestStateLog:
+    def test_log_shows_history(self, tmp_path, monkeypatch, capsys) -> None:
+        monkeypatch.chdir(tmp_path)
+        st.set_progress("did a", "do b")
+        assert main(["state", "--log"]) == 0
+        assert "done: did a" in capsys.readouterr().out
+
+
 class TestTaskBudgetAndStatus:
     def test_budget_and_status_run(self, tmp_path, monkeypatch, capsys) -> None:
         monkeypatch.chdir(tmp_path)

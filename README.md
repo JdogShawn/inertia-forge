@@ -47,9 +47,9 @@ inertia-forge status
 | `inertia-forge record-phase <phase> <target>` | record a phase (auto-closes on all-green) |
 | `inertia-forge status` | forge session + plan + task progress + last/next |
 | `inertia-forge arch <path>…` | deterministic architecture check (file size, **function length, functions/file, imports/file**, stubs, broad-except, …) — exits 1 on any P0 |
-| `inertia-forge verify [dir]` | run pytest on a target |
+| `inertia-forge verify [dir]` | run pytest + report pass/fail/coverage |
 | `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`done`/`list`/`show`/`budget` |
-| `inertia-forge state --done "…" --next "…"` | session-continuity ledger |
+| `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge init` | install the Claude Code enforcement hooks |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
