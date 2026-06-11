@@ -38,6 +38,23 @@ inertia-forge status
 # `close` is intentionally refused while gates remain — record them instead.
 ```
 
+## Commands
+
+| command | what it does |
+|---|---|
+| `inertia-forge skills` / `skills validate` | list the registry / validate it's well-formed |
+| `inertia-forge start <skill> <target>` | open a forge session |
+| `inertia-forge record-phase <phase> <target>` | record a phase (auto-closes on all-green) |
+| `inertia-forge status` | forge session + plan + task progress + last/next |
+| `inertia-forge arch <path>…` | deterministic architecture check (file size, **function length, functions/file, imports/file**, stubs, broad-except, …) — exits 1 on any P0 |
+| `inertia-forge verify [dir]` | run pytest on a target |
+| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`done`/`list`/`show`/`budget` |
+| `inertia-forge state --done "…" --next "…"` | session-continuity ledger |
+| `inertia-forge init` | install the Claude Code enforcement hooks |
+
+`arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
+can't pass on code that hides a 200-line function or 30 functions in one file.
+
 ---
 
 ## Evidence modes

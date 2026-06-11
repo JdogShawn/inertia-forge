@@ -4,10 +4,12 @@ Battle Scar #14 fix: findings come from FILE ANALYSIS, not self-reports.
 Every rule is deterministic: same file = same findings every time.
 
 Rules: line count, wildcard imports, NotImplementedError, code markers,
-empty test files, broad excepts, unbounded collections.
+empty test files, broad excepts, unbounded collections, and AST-based
+architecture limits (function length, functions/file, imports/file).
 """
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 from pathlib import Path
@@ -142,11 +144,50 @@ def _scan_safety(name: str, fp: str, lines: list[str]) -> list[dict]:
     return findings
 
 
+def _ast_rules(name: str, fp: str, content: str) -> list[dict]:
+    """AST architecture limits: function length, functions/file, imports/file.
+
+    Counts ALL functions (incl. nested + methods), matching the architecture
+    contract. Deterministic; on a syntax error returns [] (line/scan rules
+    still apply). Test files (test_*.py / *_test.py) get the larger limits.
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        return []
+    is_test = name.startswith("test_") or name.endswith("_test.py")
+    fn_len_limit = 50
+    max_fns = 30 if is_test else 15
+    max_imports = 40 if is_test else 20
+
+    funcs = [n for n in ast.walk(tree)
+             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    imports = [n for n in ast.walk(tree)
+               if isinstance(n, (ast.Import, ast.ImportFrom))]
+    findings: list[dict] = []
+    for fn in funcs:
+        length = getattr(fn, "end_lineno", fn.lineno) - fn.lineno + 1
+        if length > fn_len_limit:
+            findings.append({"severity": "P0", "rule": "function_too_long",
+                             "file": fp, "line": fn.lineno,
+                             "message": f"{name}:{fn.lineno}: function {fn.name!r} is "
+                                        f"{length} lines (limit {fn_len_limit})"})
+    if len(funcs) > max_fns:
+        findings.append({"severity": "P0", "rule": "too_many_functions",
+                         "file": fp, "line": 0,
+                         "message": f"{name}: {len(funcs)} functions exceeds {max_fns}"})
+    if len(imports) > max_imports:
+        findings.append({"severity": "P1", "rule": "too_many_imports",
+                         "file": fp, "line": 0,
+                         "message": f"{name}: {len(imports)} imports exceeds {max_imports}"})
+    return findings
+
+
 def analyze_file(filepath: Path) -> list[dict]:
     """Analyze a single Python file. All rules are objective and deterministic.
 
-    Rule order is preserved (line-count, then 2-4, then 5-7) so finding order
-    is byte-identical to the original single-function analyzer.
+    Rule order is preserved (line-count, then 2-4, then 5-7, then AST) so the
+    line/scan finding order is byte-identical to the original analyzer.
     """
     try:
         content = filepath.read_text(encoding="utf-8")
@@ -161,6 +202,7 @@ def analyze_file(filepath: Path) -> list[dict]:
         _rule_line_count(name, filepath, lines)
         + _scan_imports_markers(name, fp, lines)
         + _scan_safety(name, fp, lines)
+        + _ast_rules(name, fp, content)
     )
 
 
