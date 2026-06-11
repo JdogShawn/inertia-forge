@@ -48,6 +48,11 @@ _DISPATCH = {
     "scan-deps": ("inertia_forge.commands", "run_scan_deps"),
     "doctor": ("inertia_forge.doctor", "run_doctor"),
     "sweep": ("inertia_forge.sweep", "run_sweep"),
+    "metrics": ("inertia_forge.metrics", "run_metrics"),
+    "engage": ("inertia_forge.engage", "run_engage"),
+    "intent": ("inertia_forge.intent", "run_intent"),
+    "orchestrate": ("inertia_forge.orchestrate", "run_orchestrate"),
+    "benchmark": ("inertia_forge.benchmark", "run_benchmark"),
 }
 
 

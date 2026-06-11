@@ -57,6 +57,11 @@ inertia-forge status
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
 | `inertia-forge read <skill>` | mark a skill's methodology doc as read (`doc_reading` mode) |
+| `inertia-forge intent "<text>"` | rule-based intent → plan type + suggested skill |
+| `inertia-forge engage <backlog.md>` | parse a markdown backlog → populate the task store |
+| `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline |
+| `inertia-forge metrics add/report/set-rate` | token usage tracking + cost from configured rates |
+| `inertia-forge benchmark [path]` | time the forge's own operations |
 | `inertia-forge init` | install the Claude Code enforcement hooks |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
