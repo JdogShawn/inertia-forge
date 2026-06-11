@@ -89,7 +89,13 @@ def run_init(argv: list[str]) -> int:
             json.dumps(settings, indent=2) + "\n", encoding="utf-8",
         )
 
+    from inertia_forge.assets import install_agents, install_skills
+    agents = install_agents(root)
+    skills = install_skills(root)
+
     print(f"inertia-forge: installed {len(copied)} hook(s) into {hooks_dst}")
     print(f"inertia-forge: wired {added} new hook entr(y/ies) into {settings_path}")
+    print(f"inertia-forge: installed {len(agents)} agent(s): {', '.join(agents)}")
+    print(f"inertia-forge: installed {len(skills)} skill doc(s): {', '.join(skills)}")
     print("Restart Claude Code (or reload settings) for the hooks to take effect.")
     return 0

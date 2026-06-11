@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inertia-forge"
-version = "0.6.0"
+version = "0.7.0"
 description = "A project-agnostic, deterministic skill-enforcement engine — the only way out is to do the work."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,4 +34,9 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-inertia_forge = ["skill_definitions.yaml", "hooks/*.sh"]
+inertia_forge = [
+    "skill_definitions.yaml",
+    "hooks/*.sh",
+    "assets/agents/*.md",
+    "assets/skills/*/SKILL.md",
+]

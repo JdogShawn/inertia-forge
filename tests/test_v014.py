@@ -35,7 +35,11 @@ class TestTaskEditing:
 
 class TestDocReading:
     def test_unread_blocks_then_clears(self, proj: Path) -> None:
+        from inertia_forge import assets
         from inertia_forge.doc_reading import collect_doc_reading, mark_read
+        # investigating declares a doc; doc_reading requires it to EXIST and be
+        # read. Install the bundled docs first (as `init` would).
+        assets.install_skills(proj)
         findings, _ = collect_doc_reading("investigating", "read_docs", ".", Path("."))
         assert any(f["rule"] == "doc_unread" for f in findings)
         mark_read("investigating")

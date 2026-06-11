@@ -24,6 +24,7 @@
 # ── Code-producing skills (file_analysis) ──────────────────────────────
 implementing_with_tdd:
   loop_max: 0
+  doc: .claude/skills/implementing-with-tdd/SKILL.md
   steps:
     - write_failing_test
     - write_minimal_code
@@ -37,6 +38,7 @@ implementing_with_tdd:
 
 refactoring:
   loop_max: 3
+  doc: .claude/skills/refactoring/SKILL.md
   steps:
     - scan
     - split_files
@@ -47,6 +49,7 @@ refactoring:
 
 finishing_branches:
   loop_max: 0
+  doc: .claude/skills/finishing-branches/SKILL.md
   steps:
     - verify_tests
     - check_coverage
@@ -57,6 +60,7 @@ finishing_branches:
 
 releasing_versions:
   loop_max: 0
+  doc: .claude/skills/releasing-versions/SKILL.md
   steps:
     - validate_ready
     - bump_version
@@ -71,6 +75,7 @@ releasing_versions:
 # task state when the [paircoder] extra is present (Bundle G per-phase mode).
 designing_and_implementing:
   loop_max: 0
+  doc: .claude/skills/designing-and-implementing/SKILL.md
   phase_evidence:
     plan_tasks: task_management
   steps:
@@ -88,6 +93,7 @@ designing_and_implementing:
 reviewing_code:
   loop_max: 0
   evidence_mode: stamped
+  doc: .claude/skills/reviewing-code/SKILL.md
   steps:
     - read_changes
     - check_correctness
@@ -102,6 +108,7 @@ reviewing_code:
 security_audit:
   loop_max: 1
   evidence_mode: stamped
+  doc: .claude/skills/security-audit/SKILL.md
   steps:
     - scan_owasp
     - check_secrets
@@ -114,6 +121,7 @@ security_audit:
 investigating:
   loop_max: 0
   evidence_mode: stamped
+  doc: .claude/skills/investigating/SKILL.md
   steps:
     - observe
     - hypothesize

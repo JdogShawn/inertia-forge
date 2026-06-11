@@ -39,7 +39,7 @@ class TestIntent:
         assert classify(text)["type"] == expected
 
 
-class TestEngage:
+class TestIgnite:
     def test_ingest_backlog(self, proj: Path) -> None:
         backlog = proj / "backlog.md"
         backlog.write_text(
@@ -49,7 +49,7 @@ class TestEngage:
             "## T1.2: Tax\ncomplexity: 3\n- [ ] tax computed\nverify: pytest tests/tax\n",
             encoding="utf-8",
         )
-        assert main(["engage", str(backlog)]) == 0
+        assert main(["ignite", str(backlog)]) == 0
         ids = [t["id"] for t in tk.list_tasks()]
         assert ids == ["T1.1", "T1.2"]
         assert tk.get_plan()["title"] == "Checkout v2"

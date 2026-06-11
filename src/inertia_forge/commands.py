@@ -209,8 +209,15 @@ def run_pack(_argv: list[str]) -> int:
 
 # ── check (project-level gate — beyond skills) ───────────────────────
 _SECRET_RE = re.compile(
-    r"(password|secret|api[_-]?key|token)\s*[:=]\s*['\"][^'\"]{6,}"
-    r"|BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16}",
+    r"(password|secret|api[_-]?key|access[_-]?token|auth[_-]?token|token)\s*[:=]\s*['\"][^'\"]{6,}"
+    r"|-----BEGIN [A-Z ]*PRIVATE KEY-----"            # PEM private key
+    r"|AKIA[0-9A-Z]{16}"                              # AWS access key id
+    r"|pypi-[A-Za-z0-9_-]{16,}"                       # PyPI API token
+    r"|gh[pousr]_[A-Za-z0-9]{30,}"                    # GitHub token
+    r"|xox[baprs]-[A-Za-z0-9-]{10,}"                  # Slack token
+    r"|AIza[A-Za-z0-9_-]{30,}"                        # Google API key
+    r"|sk_live_[A-Za-z0-9]{20,}"                      # Stripe live key
+    r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}",  # JWT
     re.IGNORECASE,
 )
 _SCAN_SUFFIXES = {".py", ".env", ".yaml", ".yml", ".json", ".toml", ".sh", ".cfg", ".ini"}

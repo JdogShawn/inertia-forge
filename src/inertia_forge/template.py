@@ -20,7 +20,7 @@ reviewing_code:
 
 _PRECOMMIT = """repos:
   - repo: https://github.com/JdogShawn/inertia-forge
-    rev: v0.5.0
+    rev: v0.7.0
     hooks:
       - id: inertia-forge-check
       - id: inertia-forge-sweep

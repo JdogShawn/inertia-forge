@@ -62,7 +62,8 @@ inertia-forge status
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
 | `inertia-forge read <skill>` | mark a skill's methodology doc as read (`doc_reading` mode) |
 | `inertia-forge intent "<text>"` | rule-based intent → plan type + suggested skill |
-| `inertia-forge engage <backlog.md>` | parse a markdown backlog → populate the task store |
+| `inertia-forge ignite <backlog.md>` | set a backlog in motion → plan + tasks + suggested agent |
+| `inertia-forge agents [show/install]` | the bundled INERTIA agent roster |
 | `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline |
 | `inertia-forge metrics add/report/set-rate` | token usage tracking + cost from configured rates |
 | `inertia-forge benchmark [path]` | time the forge's own operations |
@@ -146,6 +147,36 @@ inertia-forge task list
 Verifier rules (phase-keyed, so any skill using these step names is gated): `budget_check` (every task estimated 0–100), `create_plan` (a valid-typed plan exists), `add_tasks` (≥1 well-formed task with AC + verification), `preflight` (active task is `in_progress`), `complete` (active task `done`, all AC met).
 
 **Already on bpsai-pair?** Use `evidence_mode: paircoder` instead (install `inertia-forge[paircoder]`) and the same gates verify bpsai-pair's `.paircoder/` state. Both backends ship; pick per skill.
+
+---
+
+## Agents & skills — the forge is *for LLMs to use*
+
+The forge gates the work; **agents** are the roles an LLM adopts, **skills** are
+the methodology it follows. `inertia-forge init` installs both into `.claude/`.
+
+**The INERTIA agent roster** (`.claude/agents/`):
+
+| agent | role |
+|---|---|
+| **Vector** | planning & architecture — intent → gated plan + tasks (read-only) |
+| **Piston** | implementation — test-first, drives a task to green |
+| **Caliper** | code review — measures a change precisely, reports (read-only) |
+| **Bastion** | pre-execution security gate — **blocks** dangerous ops |
+| **Sentinel** | security audit — scans & reports (read-only) |
+| **Gauge** | QA — proves real behavior with tests |
+| **Lattice** | cross-cutting — maps how a change ripples across modules |
+
+**Skill methodology docs** (`.claude/skills/<name>/SKILL.md`) ship for every
+gated skill (implementing-with-tdd, reviewing-code, security-audit, …). A skill
+can require its doc be *read* before its gates count, via `doc_reading` mode +
+`inertia-forge read <skill>`.
+
+```bash
+inertia-forge agents              # list the roster
+inertia-forge agents show piston  # read an agent's role
+inertia-forge agents install .    # drop agents + skill docs into ./.claude/
+```
 
 ---
 
