@@ -4,8 +4,7 @@ Compares the two most recent quality snapshots and flags regressions: a
 higher-is-better metric (coverage, docstring %, type-hint %) that dropped, or a
 lower-is-better metric (arch P0s, dead symbols, over-complexity) that rose.
 `telemetry check` records a ``signal`` event per regression and exits 1 if any —
-the deterministic analog of paircoder's gate_failed_closed / regression signals,
-with no model and no upload.
+a deterministic regression gate, with no model and no upload.
 """
 from __future__ import annotations
 
