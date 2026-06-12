@@ -114,6 +114,7 @@ _DISPATCH = {
     "semantic": ("inertia_forge.semantic", "run_semantic"),
     "suggest-split": ("inertia_forge.splitter", "run_suggest_split"),
     "calibrate": ("inertia_forge.calibrate", "run_calibrate"),
+    "models": ("inertia_forge.models", "run_models"),
     "query": ("inertia_forge.query", "run_query"),
     "xref": ("inertia_forge.xref", "run_xref"),
     "scan": ("inertia_forge.scan", "run_scan"),

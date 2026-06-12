@@ -5,6 +5,15 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.47.0
+- `calibrate` reaches deterministic parity: per-type **std_dev** (population),
+  `effort <complexity>`, `budget`, full **duration** estimate (avg + p80
+  minutes), and a `model` recommendation per type.
+- `models` — **LLM-aware** model recommender (the forge recommends, never calls).
+  Family-agnostic tiers (small/mid/frontier) with a current 2026 registry
+  (anthropic/openai/codex/google/kimi/grok/deepseek/qwen/glm), overridable in
+  `.forge/models.yaml`. Token + complexity drive the tier.
+
 ## 0.45.0
 - `report` — one markdown health page unifying the scan battery, code-quality
   metrics, and task progress (CI artifact / LLM-friendly).
