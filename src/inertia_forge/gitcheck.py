@@ -44,6 +44,39 @@ def dirty_files(root: Path) -> list[str]:
     return files
 
 
+def meaningful_changes(root: Path, ref: str) -> tuple[list[str], list[str]]:
+    """(meaningful, other) changed files vs *ref* — churn filtered, untracked
+    included. Meaningful = code/test/cli (real work); other = doc/config/data."""
+    from inertia_forge.roles import detect
+    diff = _git(root, "diff", "--name-only", ref)
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard")
+    seen: list[str] = []
+    for f in (diff + "\n" + untracked).splitlines():
+        f = f.strip()
+        if f and f not in seen and not _is_churn(f):
+            seen.append(f)
+    meaningful = [f for f in seen if detect(f) in ("source", "test", "cli")]
+    return meaningful, [f for f in seen if f not in meaningful]
+
+
+def run_verify_output(argv: list[str]) -> int:
+    import argparse
+    from inertia_forge.glyphs import seal
+    p = argparse.ArgumentParser(prog="inertia-forge verify-output")
+    p.add_argument("--since", default="HEAD", help="git ref to diff against")
+    args = p.parse_args(argv)
+    meaningful, other = meaningful_changes(Path("."), args.since)
+    if meaningful:
+        print(f"{seal('ok')} {len(meaningful)} meaningful change(s): {', '.join(meaningful[:5])}")
+        return 0
+    if other:
+        print(f"{seal('warn')} only metadata/doc/config changed, no code or tests: "
+              f"{', '.join(other[:5])}")
+        return 1
+    print(f"{seal('warn')} no changes vs {args.since} — produced no output")
+    return 1
+
+
 def head_subject(root: Path) -> str:
     return _git(root, "log", "-1", "--format=%s").strip()
 

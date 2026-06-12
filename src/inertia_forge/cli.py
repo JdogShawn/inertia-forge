@@ -84,6 +84,7 @@ _DISPATCH = {
     "consistency": ("inertia_forge.consistency", "run_consistency"),
     "preset": ("inertia_forge.presets", "run_preset"),
     "verify-commit": ("inertia_forge.gitcheck", "run_verify_commit"),
+    "verify-output": ("inertia_forge.gitcheck", "run_verify_output"),
     "tokens": ("inertia_forge.tokens", "run_tokens"),
     "freshness": ("inertia_forge.freshness", "run_freshness"),
     "scope": ("inertia_forge.scope", "run_scope"),

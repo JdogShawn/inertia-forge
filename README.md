@@ -62,6 +62,7 @@ inertia-forge status
 | `inertia-forge targeted [--since REF] [files…]` | map changed sources → the test files that cover them (run only what a change can break) |
 | `inertia-forge preset list/show/apply <name>` | named config archetypes (library/service/cli/data) |
 | `inertia-forge verify-commit [--require-task]` | post-commit gate: clean tree (churn-filtered) + HEAD references a task id |
+| `inertia-forge verify-output [--since REF]` | did the work produce *real* output? Exits 1 when changes are empty or metadata/doc/config-only — catches a task marked done that changed no code or tests (untracked files included) |
 | `inertia-forge scope set <id> --paths …` / `scope check` | declare a task's path scope; flag working-tree changes outside the active task's scope |
 | `inertia-forge freshness [--days N]` | flag stale/missing continuity files (CLAUDE.md, context docs, state) |
 | `inertia-forge tokens <path>… [--glob G] [--quiet]` | deterministic token estimate for a file/tree (no tokenizer dep) |
