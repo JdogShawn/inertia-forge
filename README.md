@@ -80,6 +80,7 @@ inertia-forge status
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |
 | `inertia-forge docs [path] [--min PCT] [--list]` | docstring coverage of the public surface (funcs/classes/methods) — the documentation analog of test coverage; gates on `--min` |
 | `inertia-forge types [path] [--min PCT] [--list]` | type-hint coverage — fraction of public functions with all params (self excluded) and return annotated; gates on `--min` |
+| `inertia-forge changelog [--since REF] [--until REF]` | conventional-commit changelog (release notes) from git history, grouped by type with breaking changes surfaced; defaults to since-last-tag |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
