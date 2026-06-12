@@ -1,4 +1,6 @@
-"""v0.33.0 — module split adviser (suggest-split). Deterministic AST clustering.
+"""v0.33.0 (enriched v0.39.0) — module split adviser. Threshold-gated, class-aware
+(cross-referenced to paircoder's SplitAnalyzer: line threshold + class/function
+components).
 """
 from __future__ import annotations
 
@@ -16,43 +18,48 @@ _SRC = "\n".join(
 
 
 class TestSuggest:
-    def test_clusters_by_prefix(self, tmp_path: Path) -> None:
+    def test_clusters_function_prefixes(self, tmp_path: Path) -> None:
         f = tmp_path / "m.py"
         f.write_text(_SRC, encoding="utf-8")
-        sugg = splitter.suggest(f)
-        labels = {s[0] for s in sugg}
+        sugg = splitter.suggest(f, threshold=0)
+        labels = {label for label, *_ in sugg}
         assert "check" in labels and "run" in labels
         check = next(s for s in sugg if s[0] == "check")
-        assert len(check[1]) == 4 and check[2] > 0  # 4 functions, some lines
+        assert check[1] == "functions" and len(check[2]) == 4
 
-    def test_small_file_no_suggestion(self, tmp_path: Path) -> None:
+    def test_classes_are_components(self, tmp_path: Path) -> None:
+        f = tmp_path / "c.py"
+        f.write_text("class Foo:\n    pass\nclass Bar:\n    def m(self):\n        return 1\n",
+                     encoding="utf-8")
+        kinds = {(label, kind) for label, kind, *_ in splitter.suggest(f, threshold=0)}
+        assert ("Foo", "class") in kinds and ("Bar", "class") in kinds
+
+    def test_threshold_gate(self, tmp_path: Path) -> None:
+        f = tmp_path / "m.py"
+        f.write_text(_SRC, encoding="utf-8")  # ~18 lines
+        assert splitter.suggest(f, threshold=1000) == []  # under threshold → left alone
+        assert splitter.suggest(f, threshold=0)            # over threshold → components
+
+    def test_small_file_default_threshold(self, tmp_path: Path) -> None:
         f = tmp_path / "s.py"
-        f.write_text("def a():\n    pass\ndef b():\n    pass\n", encoding="utf-8")
-        assert splitter.suggest(f) == []
+        f.write_text("def a():\n    pass\n", encoding="utf-8")
+        assert splitter.suggest(f) == []  # default 300, tiny file
 
-    def test_no_cluster_when_unique_prefixes(self, tmp_path: Path) -> None:
-        src = "\n".join(f"def uniq{i}(x):\n    return x\n" for i in range(10))
-        f = tmp_path / "u.py"
-        f.write_text(src, encoding="utf-8")
-        assert splitter.suggest(f) == []  # each prefix unique → no group of 3
-
-    def test_prefix_and_dest(self) -> None:
-        assert splitter._prefix("check_env") == "check"
-        assert splitter._prefix("_cmd_run") == "_cmd"
-        assert splitter._prefix("run") == "run"
-        assert splitter._dest_module("m", "_check") == "m_checks.py"
-        assert splitter._dest_module("m", "run") == "m_commands.py"
+    def test_dest_module(self) -> None:
+        assert splitter._dest_module("m", "_check", "functions") == "m_checks.py"
+        assert splitter._dest_module("m", "run", "functions") == "m_commands.py"
+        assert splitter._dest_module("m", "MyClass", "class") == "m_myclass.py"
 
 
 class TestCli:
     def test_advisory_exit_0(self, tmp_path: Path, capsys) -> None:
         f = tmp_path / "m.py"
         f.write_text(_SRC, encoding="utf-8")
-        assert main(["suggest-split", str(f)]) == 0
-        assert "extraction candidate" in capsys.readouterr().out
+        assert main(["suggest-split", str(f), "--threshold", "0"]) == 0
+        assert "component" in capsys.readouterr().out
 
-    def test_clean_file(self, tmp_path: Path, capsys) -> None:
+    def test_under_threshold_no_split(self, tmp_path: Path, capsys) -> None:
         f = tmp_path / "s.py"
-        f.write_text("def a():\n    pass\n", encoding="utf-8")
-        assert main(["suggest-split", str(f)]) == 0
+        f.write_text(_SRC, encoding="utf-8")
+        assert main(["suggest-split", str(f)]) == 0  # ~18 lines < 300
         assert "no split suggested" in capsys.readouterr().out

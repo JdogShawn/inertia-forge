@@ -28,27 +28,43 @@ def _prefix(name: str) -> str:
     return ("_" if name.startswith("_") else "") + parts[0]
 
 
-def suggest(path: str | Path) -> list[tuple[str, list[str], int]]:
-    """[(prefix, [names], lines_shed)] split candidates, largest group first."""
+DEFAULT_THRESHOLD = 300  # only suggest splitting a file over this many lines
+
+
+def suggest(path: str | Path, threshold: int = DEFAULT_THRESHOLD) -> list[tuple[str, str, list[str], int]]:
+    """[(label, kind, [names], lines)] split components for an over-threshold file.
+
+    Components are top-level CLASSES (each its own module) and cohesive function
+    groups (3+ sharing a name prefix). A file at or under *threshold* lines is
+    left alone — splitting a small file isn't worth it."""
     p = Path(path)
     try:
-        tree = ast.parse(p.read_text(encoding="utf-8", errors="replace"), filename=str(p))
+        text = p.read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(text, filename=str(p))
     except (OSError, SyntaxError):
         return []
-    funcs = _functions(tree)
-    if len(funcs) < 8:  # small files aren't worth splitting
+    if len(text.splitlines()) <= threshold:
         return []
+    components: list[tuple[str, str, list[str], int]] = []
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            lines = (node.end_lineno or node.lineno) - node.lineno + 1
+            components.append((node.name, "class", [node.name], lines))
     groups: dict[str, list[tuple[str, int]]] = defaultdict(list)
-    for name, start, end in funcs:
+    for name, start, end in _functions(tree):
         groups[_prefix(name)].append((name, end - start + 1))
-    out = [(label, [m[0] for m in members], sum(m[1] for m in members))
-           for label, members in groups.items() if len(members) >= 3]
-    out.sort(key=lambda s: (-len(s[1]), -s[2]))
-    return out
+    for label, members in groups.items():
+        if len(members) >= 3:
+            components.append((label, "functions", [m[0] for m in members],
+                               sum(m[1] for m in members)))
+    components.sort(key=lambda c: -c[3])
+    return components
 
 
-def _dest_module(stem: str, prefix: str) -> str:
-    key = prefix.lstrip("_")
+def _dest_module(stem: str, label: str, kind: str) -> str:
+    if kind == "class":
+        return f"{stem}_{label.lower()}.py"
+    key = label.lstrip("_")
     return f"{stem}_{_DEST.get(key, key + '_group')}.py"
 
 
@@ -57,16 +73,18 @@ def run_suggest_split(argv: list[str]) -> int:
     from inertia_forge.palette import paint
     p = argparse.ArgumentParser(prog="inertia-forge suggest-split")
     p.add_argument("path", help="an oversized source file")
+    p.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD,
+                   help=f"line count above which to suggest a split (default {DEFAULT_THRESHOLD})")
     args = p.parse_args(argv)
-    sugg = suggest(args.path)
+    sugg = suggest(args.path, args.threshold)
     if not sugg:
-        print(f"{seal('ok')} no split suggested for {args.path}")
+        print(f"{seal('ok')} no split suggested for {args.path} (under {args.threshold} lines)")
         return 0
     stem = Path(args.path).stem
-    print(f"{seal('warn')} {args.path} — {len(sugg)} extraction candidate(s):")
+    print(f"{seal('warn')} {args.path} — {len(sugg)} component(s) to extract:")
     arrow = g("arrow_l")
-    for label, names, lines in sugg:
-        dest = paint(_dest_module(stem, label), "accent")
-        shown = ", ".join(names[:6]) + (" ..." if len(names) > 6 else "")
-        print(f"  {dest}  {arrow} {len(names)} fn(s), {lines} lines: {shown}")
+    for label, kind, names, lines in sugg:
+        dest = paint(_dest_module(stem, label, kind), "accent")
+        body = label if kind == "class" else ", ".join(names[:5]) + (" ..." if len(names) > 5 else "")
+        print(f"  {dest}  {arrow} {kind} ({lines} lines): {body}")
     return 0
