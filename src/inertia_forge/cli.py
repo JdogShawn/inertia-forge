@@ -110,6 +110,7 @@ _DISPATCH = {
     "view": ("inertia_forge.tools", "run_view"),
     "qc": ("inertia_forge.qc", "run_qc"),
     "telemetry": ("inertia_forge.telemetry", "run_telemetry"),
+    "semantic": ("inertia_forge.semantic", "run_semantic"),
 }
 
 
