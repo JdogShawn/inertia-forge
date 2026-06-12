@@ -65,8 +65,25 @@ def run_doctor(argv: list[str]) -> int:
               _check_skills(), _check_hooks()]
     if args.json:
         print(json.dumps([{"check": n, "status": s, "detail": d} for n, s, d in checks], indent=2))
-    else:
-        glyph = {"PASS": "[ok]", "WARN": "[!!]", "FAIL": "[XX]"}
-        for name, status, detail in checks:
-            print(f"  {glyph[status]} {name:12} {status:4} {detail}")
-    return 1 if any(s == "FAIL" for _, s, _ in checks) else 0
+        return 1 if any(s == "FAIL" for _, s, _ in checks) else 0
+    return _render_doctor(checks)
+
+
+def _render_doctor(checks: list[Check]) -> int:
+    from inertia_forge import __version__
+    from inertia_forge.brand import mini_header
+    from inertia_forge.glyphs import g, seal
+    from inertia_forge.palette import paint
+    from inertia_forge.ui import err, ok, rule
+
+    kind = {"PASS": "ok", "WARN": "warn", "FAIL": "error"}
+    print(f"{mini_header(__version__)}  {paint('doctor', 'muted')}")
+    print(rule())
+    for name, status, detail in checks:
+        print(f"  {seal(kind[status])} {paint(name.ljust(12), 'text')} {paint(detail, 'muted')}")
+    print(rule())
+    fails = sum(1 for _, s, _ in checks if s == "FAIL")
+    warns = sum(1 for _, s, _ in checks if s == "WARN")
+    line = f"{len(checks)} checks {g('dot')} {fails} fail {g('dot')} {warns} warn"
+    (err if fails else ok)(line)
+    return 1 if fails else 0

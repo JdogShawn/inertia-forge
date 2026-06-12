@@ -15,17 +15,23 @@ from pathlib import Path
 # ── shared ───────────────────────────────────────────────────────────
 def _print_findings(findings: list[dict]) -> int:
     """Print findings grouped by severity. Return 1 if any P0, else 0."""
+    from inertia_forge.glyphs import g, seal
+    from inertia_forge.palette import paint
     by_sev: dict[str, list[dict]] = {"P0": [], "P1": [], "P2": []}
     for f in findings:
         by_sev.setdefault(f.get("severity", "P2"), []).append(f)
     if not findings:
-        print("OK: no findings")
+        print(f"{seal('ok')} {paint('no findings', 'success')}")
         return 0
+    sev_role = {"P0": "error", "P1": "warn", "P2": "muted"}
     for sev in ("P0", "P1", "P2"):
         for f in by_sev.get(sev, []):
-            print(f"  [{sev}] {f.get('message', '')}")
+            print(f"  {paint(f'[{sev}]', sev_role[sev], bold=(sev == 'P0'))} {f.get('message', '')}")
     p0, p1, p2 = (len(by_sev[s]) for s in ("P0", "P1", "P2"))
-    print(f"\n{p0} P0, {p1} P1, {p2} P2")
+    summary = (f"{paint(f'{p0} P0', 'error' if p0 else 'muted')} {g('dot')} "
+               f"{paint(f'{p1} P1', 'warn' if p1 else 'muted')} {g('dot')} "
+               f"{paint(f'{p2} P2', 'muted')}")
+    print(f"\n{seal('error' if p0 else 'ok')} {summary}")
     return 1 if p0 else 0
 
 
@@ -108,28 +114,32 @@ def run_state(argv: list[str]) -> int:
 # ── status ───────────────────────────────────────────────────────────
 def run_status(_argv: list[str]) -> int:
     """inertia-forge status — forge session + plan/tasks + last/next rollup."""
-    from inertia_forge import state as st, tasks as tk
+    from inertia_forge import __version__, state as st, tasks as tk
+    from inertia_forge.brand import mini_header
     from inertia_forge.completion_lock import get_forge_status
+    from inertia_forge.glyphs import g, gate_badge
+    from inertia_forge.ui import kv, panel
 
-    forge = get_forge_status() or "no active session"
-    print(f"forge:  {forge}")
-
+    forge = get_forge_status()
     plan = tk.get_plan()
-    print(f"plan:   {plan['type'] + ' — ' + plan['title'] if plan else '(none)'}")
-
     tasks = tk.list_tasks()
+    rows = [
+        ("forge", f"{gate_badge('locked' if forge else 'open')}  {forge or 'no active session'}"),
+        ("plan", (plan["type"] + " — " + plan["title"]) if plan else "(none)"),
+    ]
     if tasks:
         done = sum(1 for t in tasks if t["status"] == "done")
         ac_met = sum(1 for t in tasks for c in t["acceptance_criteria"] if c["done"])
         ac_tot = sum(len(t["acceptance_criteria"]) for t in tasks)
-        active = tk.active_task_id() or "(none)"
-        print(f"tasks:  {done}/{len(tasks)} done · AC {ac_met}/{ac_tot} · active {active}")
+        rows.append(("tasks", f"{done}/{len(tasks)} done {g('dot')} AC {ac_met}/{ac_tot} "
+                              f"{g('dot')} active {tk.active_task_id() or '(none)'}"))
     else:
-        print("tasks:  (none)")
-
+        rows.append(("tasks", "(none)"))
     data = st.load()
-    print(f"last:   {data['last'] or '(none)'}")
-    print(f"next:   {data['next'] or '(none)'}")
+    rows += [("last", data["last"] or "(none)"), ("next", data["next"] or "(none)")]
+
+    print(mini_header(__version__))
+    print(panel(kv(rows), title="status"))
     return 0
 
 

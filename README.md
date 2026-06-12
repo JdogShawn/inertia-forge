@@ -89,6 +89,7 @@ inertia-forge status
 | `inertia-forge wizard` | one-command guided onboarding (install + health + the loop) |
 | `inertia-forge audit <sibling-repo>` | cross-repo impact — shared contracts a sibling consumes + its health |
 | `inertia-forge mcp serve/tools` | MCP server exposing the forge's tools to any client |
+| `inertia-forge banner` / `logo [--variant full/compact/tiny]` | the INERTIA atom + wordmark — the forge's branded marks |
 | `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
@@ -115,6 +116,30 @@ repos:
 
 `inertia-forge init` also wires a **PreCompact** hook so the forge auto-`pack`s
 your context before a Claude Code compaction — continuity survives the squeeze.
+
+---
+
+## The look — INERTIA's visual language
+
+The forge wears INERTIA's identity: the **atom sigil** (orbits of motion around a
+still core), the motion-teal → violet palette (`#00FFD1 → #00C9A7 → #a78bfa`),
+and orbital status marks (`◉` filled, `○` hollow, `✓`/`▲`/`✗` seals). `status`,
+`doctor`, `check`, `arch`, and `task list` all render through one branded kit, so
+the whole CLI reads as a single instrument.
+
+It's **zero-dependency and honest about the terminal**: truecolor when advertised,
+clean ASCII when not, and fully silent under `NO_COLOR` or a pipe. Every glyph has
+an ASCII twin, so a narrow encoding (Windows cp1252) degrades instead of crashing.
+`INERTIA_FORGE_LIGHT=1` swaps in higher-contrast tones for light terminals.
+
+```bash
+inertia-forge banner          # the full atom + I N E R T I A  F O R G E
+inertia-forge logo --variant tiny   # just ⚛
+```
+
+The toolkit is importable, too — `from inertia_forge import paint, banner,
+mini_header`, plus `inertia_forge.ui` (`rule`/`panel`/`kv`/`progress_bar`/`ok`…),
+`inertia_forge.glyphs`, and `inertia_forge.spinner` for your own forge-flavored CLIs.
 
 ---
 

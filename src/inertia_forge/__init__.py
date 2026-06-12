@@ -22,10 +22,12 @@ Evidence modes (per skill, in skill_definitions.yaml):
 """
 from __future__ import annotations
 
+from inertia_forge.brand import banner, logo, mini_header
 from inertia_forge.completion_lock import (
     count_incomplete_blocking_gates,
     get_forge_status,
 )
+from inertia_forge.palette import paint
 from inertia_forge.evidence_collectors import register_enforcer
 from inertia_forge.persisted_manifest import PersistedManifest
 from inertia_forge.skill_bridge import ForgeSkillBridge
@@ -36,7 +38,7 @@ from inertia_forge.skill_registry import (
     validate_skill_name,
 )
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 __all__ = [
     "ForgeSkillBridge",
@@ -48,5 +50,9 @@ __all__ = [
     "get_evidence_mode",
     "get_required_steps",
     "validate_skill_name",
+    "banner",
+    "logo",
+    "mini_header",
+    "paint",
     "__version__",
 ]

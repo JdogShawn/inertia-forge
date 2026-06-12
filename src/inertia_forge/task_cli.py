@@ -55,15 +55,22 @@ def _h_done(a: argparse.Namespace) -> int:
 
 
 def _h_list(_a: argparse.Namespace) -> int:
+    from inertia_forge.glyphs import g, seal
+    from inertia_forge.palette import paint
     active = t.active_task_id()
     tasks = t.list_tasks()
     if not tasks:
         print("(no tasks)")
         return 0
+    smark = {"done": seal("ok"),
+             "in_progress": paint(g("orbit"), "go", bold=True),
+             "pending": paint(g("orbit_hollow"), "muted")}
     for x in tasks:
         met = sum(1 for c in x["acceptance_criteria"] if c["done"])
-        mark = "*" if x["id"] == active else " "
-        print(f"{mark} {x['id']:8} {x['status']:12} AC {met}/{len(x['acceptance_criteria'])}  {x['title']}")
+        tot = len(x["acceptance_criteria"])
+        mark = paint(g("orbit"), "accent", bold=True) if x["id"] == active else " "
+        ac = paint(f"AC {met}/{tot}", "success" if met == tot and tot else "muted")
+        print(f"{mark} {smark.get(x['status'], ' ')} {paint(x['id'].ljust(8), 'text')} {ac}  {x['title']}")
     return 0
 
 
