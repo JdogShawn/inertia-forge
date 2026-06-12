@@ -103,6 +103,7 @@ _DISPATCH = {
     "docs": ("inertia_forge.docstrings", "run_docs"),
     "types": ("inertia_forge.typehints", "run_types"),
     "changelog": ("inertia_forge.changelog", "run_changelog"),
+    "coverage": ("inertia_forge.coverage", "run_coverage"),
 }
 
 
