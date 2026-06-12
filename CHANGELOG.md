@@ -5,6 +5,14 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.55.0
+- Naming consistency: the autonomous pipeline is named **ignite** throughout —
+  the internal modules (`ignite_engine`, `ignite_runstate`, `ignite_commit`,
+  `ignite_steps`, `ignite_review`, `ignite_recovery`, `ignite_targeted`,
+  `ignite_predispatch`, `ignite_resume`), the classes (`IgniteConfig`,
+  `IgniteRunner`, `IgniteResult`), the run-state path (`.forge/ignite/runs/`),
+  and the commit prefix (`task(ignite):`). One name, end to end. No behavior change.
+
 ## 0.54.0
 - **LLM-agnostic provider layer** (`providers`) — the agent bridge is no longer
   bound to one vendor. A provider is a command template + parse rule; a built-in
@@ -12,8 +20,8 @@ The forge follows semantic-ish minor versions — each `0.N.0` adds a capability
   llm, and `.forge/providers.yaml` adds or overrides any of them. `AgentSession`
   (and therefore *every* agent-backed capability — ignite, dispatch, review,
   security, planning) now runs on whatever LLM is configured.
-- **`ignite` is the autonomous pipeline** (the forge's engage), end to end and
-  inertia-native with the bundled agents:
+- **`ignite` is the autonomous pipeline**, end to end and inertia-native with
+  the bundled agents:
   - `ignite run` — walk the task graph wave by wave; **Piston** implements each
     task (gated, targeted tests, optional per-task review), then **finalize**:
     security-gate the branch with **Bastion** (fail-closed; a P0 blocks and
@@ -23,9 +31,9 @@ The forge follows semantic-ish minor versions — each `0.N.0` adds a capability
   - `ignite plan "<goal>"` — **Vector** turns intent into a structured plan
     (summary · phases · files · complexity · risks).
   - `--dry-run` drives the whole loop with zero model calls.
-- The standalone `engage` command is removed — it lives under `ignite`. The
-  review agents are the forge's own (Caliper/Sentinel/Lattice), dispatched via
-  their bundled definitions.
+- The autonomous pipeline lives entirely under `ignite` — one command, with the
+  run/resume/runs/plan subcommands. The review agents are the forge's own
+  (Caliper/Sentinel/Lattice), dispatched via their bundled definitions.
 
 ## 0.53.0
 - `review-agent [diff|branch|commit]` — **agent-backed code review** (the forge's
@@ -36,7 +44,7 @@ The forge follows semantic-ish minor versions — each `0.N.0` adds a capability
   The diff is fenced as untrusted data (prompt-injection guard); reviewers run
   read-only. The severity classification and size heuristic are pure
   deterministic logic (testable with no model via an injected dispatcher).
-- `engage --review` now delegates its review judgment to this one review
+- `ignite --review` now delegates its review judgment to this one review
   intelligence (diff-based, P0/P1/P2) instead of a separate verdict check — a
   single source of truth for "what a review is".
 
@@ -58,7 +66,7 @@ The forge follows semantic-ish minor versions — each `0.N.0` adds a capability
   this is the invocation layer. Still the one opt-in LLM bridge.
 
 ## 0.50.0
-- `engage` gains depth on each task:
+- `ignite` gains depth on each task:
   - **Targeted tests** — maps the run's changed files to their conventional test
     paths (`git diff` → `tests/test_<mod>.py`) and tells the driver to run only
     those, not the whole suite. Deterministic; `--no-targeted-tests` opts out.
@@ -70,15 +78,15 @@ The forge follows semantic-ish minor versions — each `0.N.0` adds a capability
     failure mode and the next concrete action instead of just "tripped".
 
 ## 0.49.0
-- `engage` — the autonomous task-execution loop. Walks the task graph wave by
+- `ignite` — the autonomous task-execution loop. Walks the task graph wave by
   wave (`taskgraph.parallel_waves` levels are the phases); for each pending task
   it skips when the acceptance criteria are already satisfied on disk, otherwise
   dispatches it, commits the result, verifies the commit carried meaningful
   output, and marks it done. A circuit breaker halts the run when the failure
   ratio crosses a threshold; a human-gated task (`requires: human`) pauses to
-  resumable state under `.forge/engage/runs/`. `engage resume <run-id>` and
-  `engage runs` manage paused runs.
-- **Zero-LLM by construction:** `engage --dry-run` (or any injected task runner)
+  resumable state under `.forge/ignite/runs/`. `ignite resume <run-id>` and
+  `ignite runs` manage paused runs.
+- **Zero-LLM by construction:** `ignite --dry-run` (or any injected task runner)
   drives the entire loop with no model calls. The agent dispatch reuses the
   `invoke` bridge; outcomes feed telemetry and the calibration loop.
 

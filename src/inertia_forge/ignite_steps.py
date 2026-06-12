@@ -1,7 +1,7 @@
-"""Per-task steps for the engage loop — build the driver prompt, dispatch to an
+"""Per-task steps for the ignite loop — build the driver prompt, dispatch to an
 agent (the opt-in LLM bridge), mark the store done, and record the outcome.
 
-The default task runner is the one place engage touches an LLM. Pass your own
+The default task runner is the one place ignite touches an LLM. Pass your own
 ``task_runner`` (or ``--dry-run``) to drive the whole loop with zero LLM calls —
 the deterministic core stays intact.
 """
@@ -51,7 +51,7 @@ def agent_task_runner(task: dict, config) -> bool:
 
 
 def mark_task_done(task_id: str) -> None:
-    """Set a task done in the store (engage-level done: executed + verified)."""
+    """Set a task done in the store (ignite-level done: executed + verified)."""
     from inertia_forge import tasks as t
     data = t.load()
     task = data["tasks"].get(task_id)
@@ -69,19 +69,19 @@ def now_iso() -> str:
 
 
 def record_outcome(task: dict, outcome: str, duration: float) -> None:
-    """Record an engage task outcome to telemetry and the calibration loop."""
+    """Record an ignite task outcome to telemetry and the calibration loop."""
     tid = task.get("id", "")
     complexity = float(task.get("complexity", 0) or 0)
     try:
         from inertia_forge.telemetry import record as trecord
-        trecord("engage", tid, duration,
+        trecord("ignite", tid, duration,
                 {"outcome": outcome, "complexity": complexity})
     except Exception:
         pass
     if outcome in ("success", "skipped") and complexity:
         try:
             from inertia_forge import calibrate
-            calibrate.record(complexity, complexity, label=tid, task_type="engage",
+            calibrate.record(complexity, complexity, label=tid, task_type="ignite",
                              duration_seconds=duration, outcome=outcome,
                              complexity=complexity)
         except Exception:

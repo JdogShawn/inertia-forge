@@ -1,17 +1,17 @@
-"""CLI for `inertia-forge engage` — run the autonomous loop, resume a paused
-run, or list paused runs. Kept out of engage.py so the engine stays import-light.
+"""CLI for `inertia-forge ignite` — run the autonomous loop, resume a paused
+run, or list paused runs. Kept out of ignite.py so the engine stays import-light.
 
-  engage [run] [--dry-run] [--agent claude] [--model M] [--max-parallel N]
+  ignite [run] [--dry-run] [--agent claude] [--model M] [--max-parallel N]
                [--permission-mode auto] [--budget TOKENS] [--no-commit]
-  engage resume <run-id> [same flags]
-  engage runs
+  ignite resume <run-id> [same flags]
+  ignite runs
 """
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
-from inertia_forge.engage import EngageConfig, EngageResult, EngageRunner
+from inertia_forge.ignite_engine import IgniteConfig, IgniteResult, IgniteRunner
 
 
 def _add_run_flags(p: argparse.ArgumentParser) -> None:
@@ -31,8 +31,8 @@ def _add_run_flags(p: argparse.ArgumentParser) -> None:
     p.add_argument("--max-review-iterations", type=int, default=3)
 
 
-def _config(args: argparse.Namespace) -> EngageConfig:
-    return EngageConfig(
+def _config(args: argparse.Namespace) -> IgniteConfig:
+    return IgniteConfig(
         project_root=Path("."), agent=args.agent, model=args.model,
         permission_mode=args.permission_mode, token_budget=args.budget,
         max_parallel=args.max_parallel, dry_run=args.dry_run,
@@ -42,7 +42,7 @@ def _config(args: argparse.Namespace) -> EngageConfig:
     )
 
 
-def _print_result(res: EngageResult) -> None:
+def _print_result(res: IgniteResult) -> None:
     from inertia_forge.glyphs import g, seal
     if res.paused_task:
         print(f"{seal('warn')} PAUSED at human-gated task {res.paused_task} "
@@ -54,24 +54,24 @@ def _print_result(res: EngageResult) -> None:
     for tid in res.failed:
         print(f"  {seal('error')} {tid}: {res.failure_reasons.get(tid, '?')}")
     if res.circuit_breaker_triggered:
-        from inertia_forge.engage_recovery import recovery_guidance
+        from inertia_forge.ignite_recovery import recovery_guidance
         print(f"{seal('error')} circuit breaker tripped — failure ratio too high")
         for line in recovery_guidance(res.failure_reasons):
             print(f"  {line}")
 
 
-def _exit_code(res: EngageResult) -> int:
+def _exit_code(res: IgniteResult) -> int:
     return 1 if (res.failed or res.circuit_breaker_triggered) else 0
 
 
 def _do_run(args: argparse.Namespace) -> int:
-    res = EngageRunner(_config(args)).run()
+    res = IgniteRunner(_config(args)).run()
     _print_result(res)
     return _exit_code(res)
 
 
 def _do_resume(args: argparse.Namespace) -> int:
-    from inertia_forge.engage_runstate import load_run_state
+    from inertia_forge.ignite_runstate import load_run_state
     from inertia_forge.glyphs import seal
     try:
         state = load_run_state(Path("."), args.run_id)
@@ -80,27 +80,27 @@ def _do_resume(args: argparse.Namespace) -> int:
         return 1
     cfg = _config(args)
     cfg.max_parallel = state.max_parallel
-    res = EngageRunner(cfg).run()
+    res = IgniteRunner(cfg).run()
     _print_result(res)
     return _exit_code(res)
 
 
 def _do_runs(_args: argparse.Namespace) -> int:
-    from inertia_forge.engage_runstate import list_runs
+    from inertia_forge.ignite_runstate import list_runs
     runs = list_runs(Path("."))
     if not runs:
-        print("(no paused engage runs)")
+        print("(no paused ignite runs)")
         return 0
     for rid in runs:
         print(f"  {rid}")
     return 0
 
 
-def run_engage(argv: list[str]) -> int:
+def run_resume(argv: list[str]) -> int:
     sub = argv[0] if argv else "run"
     if sub not in ("run", "resume", "runs"):
         argv = ["run", *argv]  # default subcommand
-    p = argparse.ArgumentParser(prog="inertia-forge engage")
+    p = argparse.ArgumentParser(prog="inertia-forge ignite")
     subs = p.add_subparsers(dest="sub")
     r = subs.add_parser("run", help="run the autonomous loop")
     _add_run_flags(r)

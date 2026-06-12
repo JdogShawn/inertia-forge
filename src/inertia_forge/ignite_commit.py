@@ -1,8 +1,8 @@
-"""Git commit after a successful engage task.
+"""Git commit after a successful ignite task.
 
 If the agent already committed its own work since the task started, we only
 sweep up any remainder; otherwise we stage everything and make one
-``task(engage): <id> — <title>`` commit. Forge runtime state (the task store,
+``task(ignite): <id> — <title>`` commit. Forge runtime state (the task store,
 telemetry db, context pack, run state) is unstaged before committing so it never
 lands in a feature commit or causes merge churn.
 """
@@ -16,7 +16,7 @@ _UNSTAGE = [
     ".forge/forge_tasks.json",
     ".forge/telemetry.db",
     ".forge/context_pack.md",
-    ".forge/engage",
+    ".forge/ignite",
     ".forge/session.json",
 ]
 _GIT_TIMEOUT = 15
@@ -56,16 +56,16 @@ def commit_task(
 ) -> bool:
     """Commit task output. Returns True if a commit was made (or already present).
 
-    Never raises — git failures are reported via the return value so the engage
+    Never raises — git failures are reported via the return value so the ignite
     loop keeps going (a failed commit does not fail the task itself).
     """
     try:
         if _agent_self_committed(root, start_time):
             self_remainder = _stage_and_commit(
-                root, f"task(engage): {task_id} — remaining changes")
+                root, f"task(ignite): {task_id} — remaining changes")
             return self_remainder in (0, 1)  # 1 == nothing-to-commit (already done)
         suffix = f" — {title}" if title else ""
-        rc = _stage_and_commit(root, f"task(engage): {task_id}{suffix}")
+        rc = _stage_and_commit(root, f"task(ignite): {task_id}{suffix}")
         return rc == 0
     except (OSError, subprocess.SubprocessError):
         return False

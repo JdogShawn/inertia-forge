@@ -82,8 +82,8 @@ def run_ignite(argv: list[str]) -> int:
         from inertia_forge.ignite_run import run_pipeline
         return run_pipeline(argv[1:])
     if argv and argv[0] in ("resume", "runs"):
-        from inertia_forge.engage_cli import run_engage
-        return run_engage(argv)
+        from inertia_forge.ignite_resume import run_resume
+        return run_resume(argv)
     if argv and argv[0] == "plan":
         from inertia_forge.ignite_plan import run_plan_cli
         return run_plan_cli(argv[1:])

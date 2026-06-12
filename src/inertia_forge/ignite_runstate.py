@@ -1,9 +1,9 @@
-"""Engage run-state — persist a paused autonomous run so it resumes across
+"""Ignite run-state — persist a paused autonomous run so it resumes across
 separate CLI invocations.
 
 A run pauses when it reaches a human-gated task (a task whose ``requires`` is
-``"human"``). The state is written to ``.forge/engage/runs/<run-id>.state.json``
-with the tasks already completed, so ``engage resume <run-id>`` picks up exactly
+``"human"``). The state is written to ``.forge/ignite/runs/<run-id>.state.json``
+with the tasks already completed, so ``ignite resume <run-id>`` picks up exactly
 where it stopped. Pure JSON I/O — deterministic, inspectable, git-diffable.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ _MAX_STATE_BYTES = 1 * 1024 * 1024  # reject corrupt/hostile oversized state
 
 @dataclass
 class RunState:
-    """Serializable state for a paused engage run."""
+    """Serializable state for a paused ignite run."""
 
     run_id: str
     plan_id: str = ""
@@ -40,7 +40,7 @@ class RunState:
 
 
 def _runs_dir(project_root: Path) -> Path:
-    return project_root / ".forge" / "engage" / "runs"
+    return project_root / ".forge" / "ignite" / "runs"
 
 
 def _validate_run_id(run_id: str) -> None:
@@ -80,7 +80,7 @@ def save_pause_state(
 ) -> str:
     """Create + save a pause state, returning the generated run_id."""
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    run_id = f"engage-{ts}-{os.urandom(3).hex()}"
+    run_id = f"ignite-{ts}-{os.urandom(3).hex()}"
     save_run_state(project_root, RunState(
         run_id=run_id, plan_id=plan_id,
         completed_tasks=list(completed_tasks),

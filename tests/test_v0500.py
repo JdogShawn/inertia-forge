@@ -1,4 +1,4 @@
-"""v0.50.0 — engage depth: targeted tests, recovery guidance, review-and-fix
+"""v0.50.0 — ignite depth: targeted tests, recovery guidance, review-and-fix
 loop. All exercised with zero LLM calls (injected runners / review fns).
 """
 from __future__ import annotations
@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from inertia_forge import tasks
-from inertia_forge.engage import EngageConfig, EngageRunner
-from inertia_forge.engage_recovery import recovery_guidance
-from inertia_forge.engage_review import ReviewOutcome
-from inertia_forge.engage_targeted import build_test_instruction, map_source_to_test
+from inertia_forge.ignite_engine import IgniteConfig, IgniteRunner
+from inertia_forge.ignite_recovery import recovery_guidance
+from inertia_forge.ignite_review import ReviewOutcome
+from inertia_forge.ignite_targeted import build_test_instruction, map_source_to_test
 
 
 @pytest.fixture()
@@ -25,15 +25,15 @@ def _task(tid: str, deps: list[str] | None = None) -> None:
     tasks.add_task(tid, f"task {tid}", 10, ["do the work"], "pytest -q", depends_on=deps or [])
 
 
-def _cfg(proj: Path, **kw) -> EngageConfig:
+def _cfg(proj: Path, **kw) -> IgniteConfig:
     kw.setdefault("commit", False)
     kw.setdefault("targeted_tests", False)
-    return EngageConfig(project_root=proj, **kw)
+    return IgniteConfig(project_root=proj, **kw)
 
 
 class TestTargeted:
     def test_map_src_layout(self) -> None:
-        assert map_source_to_test("src/inertia_forge/engage.py") == "tests/test_engage.py"
+        assert map_source_to_test("src/inertia_forge/ignite.py") == "tests/test_ignite.py"
 
     def test_map_nested(self) -> None:
         assert map_source_to_test("pkg/sub/mod.py") == "tests/sub/test_mod.py"
@@ -62,7 +62,7 @@ class TestRecovery:
 class TestReviewWiring:
     def test_unresolved_review_fails_task(self, proj: Path) -> None:
         _task("T1.1")
-        runner = EngageRunner(
+        runner = IgniteRunner(
             _cfg(proj), task_runner=lambda t: True,
             review_fn=lambda t: ReviewOutcome(resolved=False, iterations=3, findings="x"))
         res = runner.run()
@@ -71,7 +71,7 @@ class TestReviewWiring:
 
     def test_resolved_review_passes(self, proj: Path) -> None:
         _task("T1.1")
-        runner = EngageRunner(
+        runner = IgniteRunner(
             _cfg(proj), task_runner=lambda t: True,
             review_fn=lambda t: ReviewOutcome(resolved=True, iterations=1))
         res = runner.run()
@@ -79,11 +79,11 @@ class TestReviewWiring:
 
 
 class TestReviewLoop:
-    """engage_review now delegates the review judgment to review_agents.review_diff
+    """ignite_review now delegates the review judgment to review_agents.review_diff
     (diff-based, P0/P1/P2). This module owns only the fix loop."""
 
     def test_clean_first_pass(self, proj: Path, monkeypatch) -> None:
-        import inertia_forge.engage_review as r
+        import inertia_forge.ignite_review as r
         from inertia_forge.review_agents import ReviewResult
         monkeypatch.setattr("inertia_forge.review_agents.review_diff",
                             lambda *a, **k: ReviewResult(action="approve"))
@@ -91,7 +91,7 @@ class TestReviewLoop:
         assert out.resolved and out.iterations == 1
 
     def test_blocking_exhausts(self, proj: Path, monkeypatch) -> None:
-        import inertia_forge.engage_review as r
+        import inertia_forge.ignite_review as r
         from inertia_forge.review_agents import ReviewResult
         monkeypatch.setattr("inertia_forge.review_agents.review_diff",
                             lambda *a, **k: ReviewResult(

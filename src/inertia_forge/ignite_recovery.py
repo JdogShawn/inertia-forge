@@ -1,6 +1,6 @@
 """Circuit-breaker recovery guidance.
 
-When the engage loop trips its breaker, name the dominant failure mode and point
+When the ignite loop trips its breaker, name the dominant failure mode and point
 at the next concrete action — so a human (or the next run) knows *why* it stopped
 and what to do, instead of just "circuit breaker tripped". Deterministic: a tally
 over the recorded failure reasons.
@@ -16,7 +16,7 @@ _CAUSE = {
                          "— raise --max-review-iterations or fix manually",
 }
 _RECOVERY = ("Recovery: address the cause above, then "
-             "`inertia-forge engage resume <run-id>` (or re-plan with "
+             "`inertia-forge ignite resume <run-id>` (or re-plan with "
              "`inertia-forge plan`)")
 
 

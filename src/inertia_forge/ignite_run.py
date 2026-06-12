@@ -11,10 +11,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from inertia_forge.engage import EngageConfig, EngageResult, EngageRunner
+from inertia_forge.ignite_engine import IgniteConfig, IgniteResult, IgniteRunner
 
 
-def _exit_code(result: EngageResult, fin: dict | None) -> int:
+def _exit_code(result: IgniteResult, fin: dict | None) -> int:
     if fin and fin.get("security_blocked"):
         return 2
     if result.failed or result.circuit_breaker_triggered:
@@ -22,7 +22,7 @@ def _exit_code(result: EngageResult, fin: dict | None) -> int:
     return 0
 
 
-def _print(result: EngageResult, fin: dict | None) -> None:
+def _print(result: IgniteResult, fin: dict | None) -> None:
     from inertia_forge.glyphs import g, seal
     head = "error" if (result.failed or result.circuit_breaker_triggered) else "ok"
     print(f"{seal(head)} {len(result.completed)} done "
@@ -59,11 +59,11 @@ def run_pipeline(argv: list[str]) -> int:
     p.add_argument("--base", default="main", help="base branch for finalize/PR")
     args = p.parse_args(argv)
 
-    cfg = EngageConfig(
+    cfg = IgniteConfig(
         project_root=Path("."), agent=args.agent, model=args.model,
         token_budget=args.budget, max_parallel=args.max_parallel,
         dry_run=args.dry_run, review=args.review)
-    result = EngageRunner(cfg).run()
+    result = IgniteRunner(cfg).run()
 
     if result.paused_task:
         from inertia_forge.glyphs import seal

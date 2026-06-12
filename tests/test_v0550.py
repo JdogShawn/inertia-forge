@@ -1,6 +1,6 @@
 """v0.54.0 — the ignite pipeline: security gate, finalize, planning, run.
 
-Behaviors cross-referenced from the engage source: the gate fail-closes (agent
+Behaviors cross-referenced from the ignite source: the gate fail-closes (agent
 error blocks), a P0 blocks, a security block halts finalize before review, and
 the plan parser extracts the structured sections. All zero-LLM via injected
 dispatchers / monkeypatched diffs.
@@ -13,7 +13,7 @@ import pytest
 
 from inertia_forge import ignite_finalize as ifin
 from inertia_forge import ignite_security as isec
-from inertia_forge.engage import EngageResult
+from inertia_forge.ignite_engine import IgniteResult
 
 
 @pytest.fixture()
@@ -48,8 +48,8 @@ class TestSecurityGate:
 
 
 class TestFinalize:
-    def _result(self) -> EngageResult:
-        return EngageResult(completed=["T1.1"], phases_completed=1)
+    def _result(self) -> IgniteResult:
+        return IgniteResult(completed=["T1.1"], phases_completed=1)
 
     def test_security_block_halts(self, proj: Path, monkeypatch) -> None:
         monkeypatch.setattr(isec, "branch_diff", lambda *a, **k: _DIFF)

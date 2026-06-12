@@ -1,4 +1,4 @@
-"""Engage — the autonomous task-execution loop.
+"""Ignite — the autonomous task-execution loop.
 
 Walks the task graph wave by wave (each :func:`taskgraph.parallel_waves` level is
 a phase). For every pending task: skip it if its acceptance criteria are already
@@ -16,10 +16,10 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from inertia_forge.engage_commit import commit_task
-from inertia_forge.engage_predispatch import CheckResult, pre_dispatch_check
-from inertia_forge.engage_runstate import save_pause_state
-from inertia_forge.engage_steps import (
+from inertia_forge.ignite_commit import commit_task
+from inertia_forge.ignite_predispatch import CheckResult, pre_dispatch_check
+from inertia_forge.ignite_runstate import save_pause_state
+from inertia_forge.ignite_steps import (
     agent_task_runner,
     mark_task_done,
     now_iso,
@@ -29,8 +29,8 @@ from inertia_forge.engage_steps import (
 
 
 @dataclass
-class EngageConfig:
-    """How an engage run behaves."""
+class IgniteConfig:
+    """How an ignite run behaves."""
 
     project_root: Path = field(default_factory=lambda: Path("."))
     agent: str = "claude"
@@ -48,8 +48,8 @@ class EngageConfig:
 
 
 @dataclass
-class EngageResult:
-    """Aggregate outcome of an engage run."""
+class IgniteResult:
+    """Aggregate outcome of an ignite run."""
 
     completed: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
@@ -61,12 +61,12 @@ class EngageResult:
     failure_reasons: dict[str, str] = field(default_factory=dict)
 
 
-class EngageRunner:
+class IgniteRunner:
     """Executes the task graph wave-by-wave with a circuit breaker."""
 
-    def __init__(self, config: EngageConfig | None = None, task_runner=None,
+    def __init__(self, config: IgniteConfig | None = None, task_runner=None,
                  review_fn=None) -> None:
-        self.config = config or EngageConfig()
+        self.config = config or IgniteConfig()
         if task_runner is not None:
             self._runner = task_runner
         elif self.config.dry_run:
@@ -77,7 +77,7 @@ class EngageRunner:
         if review_fn is not None:
             self._review = review_fn
         elif self.config.review:
-            from inertia_forge.engage_review import review_and_fix
+            from inertia_forge.ignite_review import review_and_fix
             self._review = lambda task: review_and_fix(
                 task, self.config, self.config.max_review_iterations)
         else:
@@ -85,16 +85,16 @@ class EngageRunner:
 
     def _prepare_targeted_tests(self) -> None:
         if self.config.targeted_tests and not self.config.test_instruction:
-            from inertia_forge.engage_targeted import (
+            from inertia_forge.ignite_targeted import (
                 build_test_instruction, resolve_test_targets,
             )
             self.config.test_instruction = build_test_instruction(
                 resolve_test_targets(self.config.project_root))
 
-    def run(self) -> EngageResult:
+    def run(self) -> IgniteResult:
         from inertia_forge import taskgraph
         self._prepare_targeted_tests()
-        res = EngageResult()
+        res = IgniteResult()
         for wave in taskgraph.parallel_waves():
             pending = self._phase_pending(wave)
             if not pending:
@@ -113,7 +113,7 @@ class EngageRunner:
                 break
         return res
 
-    def _run_phase(self, pending: list[str], res: EngageResult) -> None:
+    def _run_phase(self, pending: list[str], res: IgniteResult) -> None:
         if self.config.max_parallel > 1 and len(pending) > 1:
             from concurrent.futures import ThreadPoolExecutor
             workers = min(self.config.max_parallel, len(pending))
@@ -123,7 +123,7 @@ class EngageRunner:
             for tid in pending:
                 self._run_task(tid, res)
 
-    def _run_task(self, tid: str, res: EngageResult) -> None:
+    def _run_task(self, tid: str, res: IgniteResult) -> None:
         from inertia_forge import tasks
         task = tasks.get_task(tid)
         if task is None:
@@ -156,7 +156,7 @@ class EngageRunner:
         res.completed.append(tid)
         record_outcome(task, "success", dur)
 
-    def _fail(self, tid: str, why: str, task: dict, dur: float, res: EngageResult) -> None:
+    def _fail(self, tid: str, why: str, task: dict, dur: float, res: IgniteResult) -> None:
         res.failed.append(tid)
         res.failure_reasons[tid] = why
         record_outcome(task, "failed", dur)
@@ -183,7 +183,7 @@ class EngageRunner:
         plan = tasks.get_plan()
         return plan.get("id", "") if plan else ""
 
-    def _check_breaker(self, res: EngageResult) -> bool:
+    def _check_breaker(self, res: IgniteResult) -> bool:
         total = len(res.completed) + len(res.failed)
         if total == 0:
             return False

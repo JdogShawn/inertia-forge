@@ -1,4 +1,4 @@
-"""v0.49.0 — the engage autonomous loop. The whole loop is exercised with ZERO
+"""v0.49.0 — the ignite autonomous loop. The whole loop is exercised with ZERO
 LLM calls: an injected task_runner (or --dry-run) stands in for the agent.
 """
 from __future__ import annotations
@@ -9,8 +9,8 @@ import pytest
 
 from inertia_forge import tasks
 from inertia_forge.cli import main
-from inertia_forge.engage import EngageConfig, EngageRunner
-from inertia_forge.engage_predispatch import CheckResult, pre_dispatch_check
+from inertia_forge.ignite_engine import IgniteConfig, IgniteRunner
+from inertia_forge.ignite_predispatch import CheckResult, pre_dispatch_check
 
 
 @pytest.fixture()
@@ -24,14 +24,14 @@ def _task(tid: str, deps: list[str] | None = None, ac: str = "do the work") -> N
     tasks.add_task(tid, f"task {tid}", 10, [ac], "pytest -q", depends_on=deps or [])
 
 
-def _cfg(proj: Path, **kw) -> EngageConfig:
+def _cfg(proj: Path, **kw) -> IgniteConfig:
     kw.setdefault("commit", False)
-    return EngageConfig(project_root=proj, **kw)
+    return IgniteConfig(project_root=proj, **kw)
 
 
 class TestRunState:
     def test_roundtrip(self, proj: Path) -> None:
-        from inertia_forge.engage_runstate import (
+        from inertia_forge.ignite_runstate import (
             RunState, load_run_state, save_run_state,
         )
         save_run_state(proj, RunState(run_id="r1", plan_id="p1",
@@ -40,19 +40,19 @@ class TestRunState:
         assert loaded.completed_tasks == ["T1.1"] and loaded.paused_task_id == "T1.2"
 
     def test_traversal_rejected(self, proj: Path) -> None:
-        from inertia_forge.engage_runstate import load_run_state, save_run_state, RunState
+        from inertia_forge.ignite_runstate import load_run_state, save_run_state, RunState
         with pytest.raises(ValueError):
             save_run_state(proj, RunState(run_id="../evil"))
         with pytest.raises(ValueError):
             load_run_state(proj, "../../etc/passwd")
 
     def test_pause_state_and_list(self, proj: Path) -> None:
-        from inertia_forge.engage_runstate import list_runs, save_pause_state
+        from inertia_forge.ignite_runstate import list_runs, save_pause_state
         rid = save_pause_state(proj, "p1", ["T1.1"], "T1.2")
         assert rid in list_runs(proj)
 
     def test_missing_raises(self, proj: Path) -> None:
-        from inertia_forge.engage_runstate import load_run_state
+        from inertia_forge.ignite_runstate import load_run_state
         with pytest.raises(FileNotFoundError):
             load_run_state(proj, "ghost")
 
@@ -80,7 +80,7 @@ class TestPreDispatch:
 
 class TestSteps:
     def test_build_prompt(self) -> None:
-        from inertia_forge.engage_steps import build_task_prompt
+        from inertia_forge.ignite_steps import build_task_prompt
         task = {"id": "T1.1", "title": "widget",
                 "acceptance_criteria": [{"text": "it works", "done": False}],
                 "verification": "pytest -q", "scope": ["src/w.py"]}
@@ -88,7 +88,7 @@ class TestSteps:
         assert "T1.1" in out and "it works" in out and "pytest -q" in out and "src/w.py" in out
 
     def test_mark_done(self, proj: Path) -> None:
-        from inertia_forge.engage_steps import mark_task_done
+        from inertia_forge.ignite_steps import mark_task_done
         _task("T1.1")
         mark_task_done("T1.1")
         assert tasks.get_task("T1.1")["status"] == "done"
@@ -99,7 +99,7 @@ class TestRunner:
         _task("T1.1")
         _task("T1.2", deps=["T1.1"])
         seen: list[str] = []
-        res = EngageRunner(_cfg(proj), task_runner=lambda t: seen.append(t["id"]) or True).run()
+        res = IgniteRunner(_cfg(proj), task_runner=lambda t: seen.append(t["id"]) or True).run()
         assert res.completed == ["T1.1", "T1.2"] and seen == ["T1.1", "T1.2"]
         assert res.phases_completed == 2 and not res.failed
 
@@ -108,23 +108,23 @@ class TestRunner:
         (proj / "mod" / "done.py").write_text("ok", encoding="utf-8")
         _task("T1.1", ac="adds `mod/done.py`")
         called: list[str] = []
-        res = EngageRunner(_cfg(proj), task_runner=lambda t: called.append(t["id"]) or True).run()
+        res = IgniteRunner(_cfg(proj), task_runner=lambda t: called.append(t["id"]) or True).run()
         assert "T1.1" in res.skipped and called == []  # never dispatched
         assert tasks.get_task("T1.1")["status"] == "done"
 
     def test_circuit_breaker_trips(self, proj: Path) -> None:
         _task("T1.1")
         _task("T1.2")  # same wave, both fail → ratio 1.0
-        res = EngageRunner(_cfg(proj), task_runner=lambda t: False).run()
+        res = IgniteRunner(_cfg(proj), task_runner=lambda t: False).run()
         assert res.circuit_breaker_triggered and len(res.failed) == 2
         assert res.failure_reasons["T1.1"] == "agent_failed"
 
     def test_no_meaningful_output_fails(self, proj: Path, monkeypatch) -> None:
         _task("T1.1")
-        import inertia_forge.engage as eng
+        import inertia_forge.ignite_engine as eng
         monkeypatch.setattr(eng, "commit_task", lambda *a, **k: True)
         monkeypatch.setattr(eng, "verify_output", lambda root: False)
-        res = EngageRunner(_cfg(proj, commit=True), task_runner=lambda t: True).run()
+        res = IgniteRunner(_cfg(proj, commit=True), task_runner=lambda t: True).run()
         assert res.failed == ["T1.1"] and res.failure_reasons["T1.1"] == "no_meaningful_output"
 
     def test_human_gate_pauses_and_resumes(self, proj: Path) -> None:
@@ -132,15 +132,15 @@ class TestRunner:
         data = tasks.load()
         data["tasks"]["T1.1"]["requires"] = "human"
         tasks.save(data)
-        res = EngageRunner(_cfg(proj), task_runner=lambda t: True).run()
+        res = IgniteRunner(_cfg(proj), task_runner=lambda t: True).run()
         assert res.paused_task == "T1.1" and res.run_id
-        from inertia_forge.engage_runstate import list_runs
+        from inertia_forge.ignite_runstate import list_runs
         assert res.run_id in list_runs(proj)
         # human resolves it, resume proceeds (task now done → nothing pending)
         tasks.save({**tasks.load(), "tasks": {**tasks.load()["tasks"]}})
-        from inertia_forge.engage_steps import mark_task_done
+        from inertia_forge.ignite_steps import mark_task_done
         mark_task_done("T1.1")
-        res2 = EngageRunner(_cfg(proj), task_runner=lambda t: True).run()
+        res2 = IgniteRunner(_cfg(proj), task_runner=lambda t: True).run()
         assert res2.paused_task is None and not res2.failed
 
 

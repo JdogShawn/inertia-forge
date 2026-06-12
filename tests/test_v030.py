@@ -1,4 +1,4 @@
-"""v0.3.0 deterministic capabilities: metrics, intent, engage, orchestrate, benchmark."""
+"""v0.3.0 deterministic capabilities: metrics, intent, ignite, orchestrate, benchmark."""
 from __future__ import annotations
 
 from pathlib import Path
