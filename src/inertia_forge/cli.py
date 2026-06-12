@@ -78,6 +78,7 @@ _DISPATCH = {
     "compaction": ("inertia_forge.compaction", "run_compaction"),
     "banner": ("inertia_forge.show", "run_banner"),
     "logo": ("inertia_forge.show", "run_logo"),
+    "statusline": ("inertia_forge.statusline", "run_statusline"),
 }
 
 

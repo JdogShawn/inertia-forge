@@ -90,6 +90,7 @@ inertia-forge status
 | `inertia-forge audit <sibling-repo>` | cross-repo impact — shared contracts a sibling consumes + its health |
 | `inertia-forge mcp serve/tools` | MCP server exposing the forge's tools to any client |
 | `inertia-forge banner` / `logo [--variant full/compact/tiny]` | the INERTIA atom + wordmark — the forge's branded marks |
+| `inertia-forge statusline` | Claude Code status segment: `⚛ INERTIA forge · <state>` (reads status JSON on stdin) |
 | `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
 
 `arch` and `file_analysis` evidence share the same AST-backed rules, so a gate
@@ -135,6 +136,25 @@ an ASCII twin, so a narrow encoding (Windows cp1252) degrades instead of crashin
 ```bash
 inertia-forge banner          # the full atom + I N E R T I A  F O R G E
 inertia-forge logo --variant tiny   # just ⚛
+```
+
+### See the forge in your footer — the statusLine
+
+`inertia-forge init` wires a **Claude Code statusLine** so the forge sits in the
+footer next to your model, branch, and folder — proof it's installed and live:
+
+```
+⚛ INERTIA forge · ◉ T1.2 · 3/8      # an active task
+⚛ INERTIA forge · ▣ 2 gates sealed  # a session holding blocking gates
+⚛ INERTIA forge · ▢ ready           # installed, idle
+```
+
+It reads Claude Code's status JSON from stdin (session id, model, workspace),
+renders one ANSI line, and never crashes. Already have a statusLine? `init`
+leaves yours untouched — add the forge segment by hand instead:
+
+```json
+"statusLine": { "type": "command", "command": "inertia-forge statusline", "padding": 0 }
 ```
 
 The toolkit is importable, too — `from inertia_forge import paint, banner,

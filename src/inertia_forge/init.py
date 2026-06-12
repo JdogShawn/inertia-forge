@@ -6,6 +6,7 @@ them into ``<target>/.claude/settings.json`` (idempotently):
   UserPromptSubmit -> inject-forge-status.sh, auto-forge-on-slash-command.sh
   PreToolUse(Bash) -> enforce-forge-gate.sh
   Stop             -> prevent-forge-stop.sh
+  statusLine       -> inertia-forge statusline  (⚛ INERTIA forge footer segment)
 
 After this, invoking a registered skill in Claude Code opens a forge session
 whose blocking gates cannot be skipped — the Stop hook holds the session until
@@ -56,6 +57,19 @@ def _ensure_hook(settings: dict, event: str, matcher: str | None, script: str) -
     return True
 
 
+def _ensure_statusline(settings: dict) -> bool:
+    """Install the forge statusLine segment, idempotently. Returns True if newly
+    added. Respects a pre-existing custom statusLine (never clobbers the user's)."""
+    existing = settings.get("statusLine")
+    if isinstance(existing, dict) and existing.get("command"):
+        c = existing["command"].lower()
+        return False  # ours already, or the user's own — leave it be
+    settings["statusLine"] = {
+        "type": "command", "command": "inertia-forge statusline", "padding": 0,
+    }
+    return True
+
+
 def run_init(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="inertia-forge init")
     parser.add_argument(
@@ -81,26 +95,36 @@ def run_init(argv: list[str]) -> int:
             settings = None  # type: ignore[assignment]
 
     added = 0
+    statusline = False
     if settings is not None:
         for event, matcher, script in _WIRING:
             if _ensure_hook(settings, event, matcher, script):
                 added += 1
+        statusline = _ensure_statusline(settings)
         settings_path.write_text(
             json.dumps(settings, indent=2) + "\n", encoding="utf-8",
         )
 
     from inertia_forge import assets
-    agents = assets.install_agents(root)
-    skills = assets.install_skills(root)
-    cmds = assets.install_commands(root)
-    rules = assets.install_rules(root)
+    counts = {
+        "agents": len(assets.install_agents(root)),
+        "skills": len(assets.install_skills(root)),
+        "cmds": len(assets.install_commands(root)),
+        "rules": len(assets.install_rules(root)),
+    }
     assets.install_agent_memory(root)
     scaffold = assets.install_scaffold(root)
+    _report_init(hooks_dst, settings_path, len(copied), added, statusline, counts, scaffold)
+    return 0
 
-    print(f"inertia-forge: installed {len(copied)} hook(s) into {hooks_dst}")
+
+def _report_init(hooks_dst, settings_path, copied, added, statusline, counts, scaffold) -> None:
+    """Print the install summary (split out to keep run_init under the line limit)."""
+    sl = "installed (⚛ INERTIA forge)" if statusline else "already configured"
+    print(f"inertia-forge: installed {copied} hook(s) into {hooks_dst}")
     print(f"inertia-forge: wired {added} new hook entr(y/ies) into {settings_path}")
-    print(f"inertia-forge: installed {len(agents)} agent(s) + {len(skills)} skill doc(s)")
-    print(f"inertia-forge: installed {len(cmds)} slash command(s), {len(rules)} rule doc(s)")
+    print(f"inertia-forge: statusLine {sl}")
+    print(f"inertia-forge: installed {counts['agents']} agent(s) + {counts['skills']} skill doc(s)")
+    print(f"inertia-forge: installed {counts['cmds']} slash command(s), {counts['rules']} rule doc(s)")
     print(f"inertia-forge: agent memory seeded; scaffolded {', '.join(scaffold) or '(nothing new)'}")
     print("Restart Claude Code (or reload settings) for the hooks to take effect.")
-    return 0
