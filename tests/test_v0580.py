@@ -55,3 +55,33 @@ class TestModelRouting:
         from inertia_forge.ignite_steps import resolve_model
         cfg = type("C", (), {"model": "fixed", "model_routing": None})()
         assert resolve_model({"complexity": 50}, cfg) == "fixed"
+
+
+class TestBranchCreation:
+    def _git_init(self, p, branch="main"):
+        import subprocess
+        for a in (["init"], ["config", "user.email", "a@b.c"], ["config", "user.name", "x"],
+                  ["checkout", "-b", branch], ["commit", "--allow-empty", "-m", "init"]):
+            subprocess.run(["git", *a], cwd=p, capture_output=True, text=True)
+
+    def test_creates_and_checks_out_branch(self, tmp_path, monkeypatch):
+        import subprocess
+        from inertia_forge.ignite_run import _checkout_branch
+        monkeypatch.chdir(tmp_path); self._git_init(tmp_path)
+        assert _checkout_branch(tmp_path, "feature/x") is True
+        cur = subprocess.run(["git", "branch", "--show-current"], cwd=tmp_path,
+                             capture_output=True, text=True).stdout.strip()
+        assert cur == "feature/x"
+
+    def test_rejects_bad_branch_name(self, tmp_path, monkeypatch):
+        from inertia_forge.ignite_run import _checkout_branch
+        monkeypatch.chdir(tmp_path); self._git_init(tmp_path)
+        assert _checkout_branch(tmp_path, "-evil; rm") is False
+
+    def test_branch_escapes_protected(self, tmp_path, monkeypatch):
+        # on main (protected) → checkout a feature branch → no longer protected
+        from inertia_forge.ignite_run import _checkout_branch, _protected_branch
+        monkeypatch.chdir(tmp_path); self._git_init(tmp_path, "main")
+        assert _protected_branch(tmp_path) == "main"
+        assert _checkout_branch(tmp_path, "feature/run") is True
+        assert _protected_branch(tmp_path) is None  # escaped — run would proceed

@@ -5,6 +5,12 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.59.0
+- `ignite run --branch <name>` — create and checkout a feature branch before the
+  run (falls back to a plain checkout if it exists), so you can ignite straight
+  off a protected branch without first switching. Branch names are validated for
+  git safety. Complements the protected-branch refusal.
+
 ## 0.58.0
 - **Per-task model routing** — `ignite run` routes the model by each task's
   complexity via a `routing:` section in `.forge/models.yaml` (tier → max

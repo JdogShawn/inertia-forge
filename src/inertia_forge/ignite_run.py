@@ -9,9 +9,13 @@ is selected; `--dry-run` drives the whole loop with zero model calls.
 from __future__ import annotations
 
 import argparse
+import re
+import subprocess
 from pathlib import Path
 
 from inertia_forge.ignite_engine import IgniteConfig, IgniteResult, IgniteRunner
+
+_BRANCH_RE = re.compile(r"^[A-Za-z0-9/_.-]+$")
 
 
 _PROTECTED = ("main", "master", "dev")
@@ -36,6 +40,25 @@ def _protected_branch(root: Path) -> str | None:
     from inertia_forge.gitcheck import _git
     branch = _git(root, "branch", "--show-current").strip()
     return branch if branch in _PROTECTED else None
+
+
+def _checkout_branch(root: Path, branch: str) -> bool:
+    """Create and checkout *branch*, falling back to a plain checkout if it
+    already exists. Returns True on success. Name is validated for git safety."""
+    if not branch or not _BRANCH_RE.match(branch) or branch.startswith("-"):
+        from inertia_forge.glyphs import seal
+        print(f"{seal('error')} invalid branch name {branch!r} — only A-Z a-z 0-9 "
+              "/ _ . - allowed, must not start with '-'")
+        return False
+    create = subprocess.run(["git", "checkout", "-b", branch], cwd=str(root),
+                            capture_output=True, text=True, encoding="utf-8",
+                            errors="replace", check=False)
+    if create.returncode == 0:
+        return True
+    fallback = subprocess.run(["git", "checkout", branch], cwd=str(root),
+                              capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", check=False)
+    return fallback.returncode == 0
 
 
 def _exit_code(result: IgniteResult, fin: dict | None) -> int:
@@ -69,6 +92,23 @@ def _print(result: IgniteResult, fin: dict | None) -> None:
         print(f"{seal('ok')} PR: {fin['pr_url']}")
 
 
+def _branch_preflight(args: argparse.Namespace) -> int | None:
+    """Checkout a requested feature branch and enforce protected-branch refusal.
+    Returns an exit code to return immediately, or None to proceed."""
+    from inertia_forge.glyphs import seal
+    if args.branch and not args.dry_run and not _checkout_branch(Path("."), args.branch):
+        print(f"{seal('error')} could not checkout branch '{args.branch}'")
+        return 1
+    if not args.dry_run and not args.force:
+        protected = _protected_branch(Path("."))
+        if protected:
+            print(f"{seal('error')} refusing to run on protected branch "
+                  f"'{protected}' — switch to a feature branch "
+                  f"(git checkout -b <name>) or pass --force")
+            return 2
+    return None
+
+
 def run_pipeline(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="inertia-forge ignite run")
     p.add_argument("--agent", default="claude", help="LLM provider (see `providers list`)")
@@ -82,18 +122,13 @@ def run_pipeline(argv: list[str]) -> int:
                    help="skip the security gate + branch review after execution")
     p.add_argument("--pr", action="store_true", help="open a PR after a clean finalize")
     p.add_argument("--base", default="main", help="base branch for finalize/PR")
+    p.add_argument("--branch", default="", help="create+checkout this feature branch first")
     p.add_argument("--force", action="store_true",
                    help="allow running on a protected branch (main/master/dev)")
     args = p.parse_args(argv)
-
-    if not args.dry_run and not args.force:
-        protected = _protected_branch(Path("."))
-        if protected:
-            from inertia_forge.glyphs import seal
-            print(f"{seal('error')} refusing to run on protected branch "
-                  f"'{protected}' — switch to a feature branch "
-                  f"(git checkout -b <name>) or pass --force")
-            return 2
+    pre = _branch_preflight(args)
+    if pre is not None:
+        return pre
 
     cfg = IgniteConfig(
         project_root=Path("."), agent=args.agent, model=args.model,
