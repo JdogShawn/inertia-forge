@@ -75,6 +75,7 @@ _DISPATCH = {
     "wizard": ("inertia_forge.wizard", "run_wizard"),
     "install-hook": ("inertia_forge.commands", "run_install_hook"),
     "audit": ("inertia_forge.audit", "run_audit"),
+    "compaction": ("inertia_forge.compaction", "run_compaction"),
 }
 
 

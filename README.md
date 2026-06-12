@@ -56,7 +56,7 @@ inertia-forge status
 | `inertia-forge check [path] [--tests DIR] [--deps]` | **project gate** — arch + secrets (+ tests + dep audit) as one pass/fail (pre-commit/CI) |
 | `inertia-forge sweep [path] [--fix]` | find (or remove) unused imports |
 | `inertia-forge scan-deps [path]` | dependency vulnerability scan (pip-audit, optional) |
-| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget` |
+| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget [--max]`/`next`/`archive`/`restore`/`list-archived`/`cleanup`/`changelog` |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
@@ -66,13 +66,14 @@ inertia-forge status
 | `inertia-forge agents [show/install]` | the bundled INERTIA agent roster |
 | `inertia-forge memory add/show/list <agent>` | per-agent persistent memory (`.claude/agent-memory/`) |
 | `inertia-forge capabilities [--json]` | discovery manifest — the whole toolkit for an LLM to read |
-| `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline |
-| `inertia-forge metrics add/report/set-rate` | token usage tracking + cost from configured rates |
+| `inertia-forge orchestrate "<cmd>" …` | run forge commands as a fail-fast pipeline; `select-agent "<task>"` maps work → best-fit agent |
+| `inertia-forge metrics add/report/set-rate/velocity/summary` | token usage + cost, plus task throughput (velocity) and a combined task+token summary |
+| `inertia-forge compaction snapshot/check/recover/cleanup` | freeze/restore context across a Claude Code compaction — numbered, recoverable snapshots |
 | `inertia-forge benchmark [path]` | time the forge's own operations |
 | `inertia-forge feature <name> [--no-branch]` | start a feature: git branch + plan + task + next |
 | `inertia-forge learn <text> [--tag T]` / `learn list/search` | capture/list/search insights (`.forge/knowledge.jsonl`) |
 | `inertia-forge standup [--since]` | daily summary: git commits + tasks + last/next + tokens |
-| `inertia-forge config get/set/unset/list` | typed forge settings (`.forge/config.json`) |
+| `inertia-forge config get/set/unset/list/validate` | typed forge settings (`.forge/config.json`) + JSON/known-key validation |
 | `inertia-forge contain on/off/set/check/status` | file-access tiers (blocked/readonly/readwrite) for contained sessions |
 | `inertia-forge sandbox status/init/check` | command policy — block catastrophic ops, flag risky ones (gate-enforced) |
 | `inertia-forge timer start/stop/status/report` | work-time tracking |

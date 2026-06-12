@@ -85,6 +85,39 @@ def _h_report(_a: argparse.Namespace) -> int:
     return 0
 
 
+def _completed_tasks() -> list[dict]:
+    from inertia_forge import tasks as tk
+    return [x for x in tk.list_tasks() + tk.list_archived()
+            if x.get("status") == "done" and x.get("completed_at")]
+
+
+def _h_velocity(_a: argparse.Namespace) -> int:
+    from collections import Counter
+    done = _completed_tasks()
+    if not done:
+        print("(no completed tasks with timestamps)")
+        return 0
+    by_day = Counter(x["completed_at"][:10] for x in done)
+    pts = sum(x.get("complexity", 0) for x in done)
+    print(f"velocity: {len(done)} task(s) / {pts:g} complexity points completed")
+    for day in sorted(by_day):
+        print(f"  {day}: {by_day[day]} task(s)")
+    return 0
+
+
+def _h_summary(_a: argparse.Namespace) -> int:
+    from inertia_forge import tasks as tk
+    by_model = totals()
+    tasks = tk.list_tasks()
+    done = sum(1 for x in tasks if x["status"] == "done")
+    tin = sum(d["in"] for d in by_model.values())
+    tout = sum(d["out"] for d in by_model.values())
+    print(f"tasks:  {done}/{len(tasks)} done"
+          f" ({len(_completed_tasks())} archived+active completed)")
+    print(f"tokens: {tin} in / {tout} out across {len(by_model)} model(s)")
+    return 0
+
+
 def run_metrics(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="inertia-forge metrics")
     sub = p.add_subparsers(dest="sub", required=True)
@@ -99,5 +132,7 @@ def run_metrics(argv: list[str]) -> int:
     sr.add_argument("--out", dest="out_rate", type=float, required=True)
     sr.set_defaults(fn=_h_set_rate)
     sub.add_parser("report", help="show token totals + estimated cost").set_defaults(fn=_h_report)
+    sub.add_parser("velocity", help="tasks completed per day").set_defaults(fn=_h_velocity)
+    sub.add_parser("summary", help="combined task + token summary").set_defaults(fn=_h_summary)
     args = p.parse_args(argv)
     return args.fn(args)

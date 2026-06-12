@@ -79,7 +79,7 @@ def _h_ac_add(a: argparse.Namespace) -> int:
     return 0
 
 
-def _h_budget(_a: argparse.Namespace) -> int:
+def _h_budget(a: argparse.Namespace) -> int:
     tasks = t.list_tasks()
     if not tasks:
         print("(no tasks)")
@@ -95,6 +95,12 @@ def _h_budget(_a: argparse.Namespace) -> int:
             print(f"  {s:12} {by_status[s]:g}")
     if unestimated:
         print(f"unestimated / out-of-range: {', '.join(unestimated)}")
+    if getattr(a, "max", None) is not None:
+        remaining = by_status.get("pending", 0) + by_status.get("in_progress", 0)
+        over = remaining > a.max
+        print(f"budget check: {remaining:g} remaining vs max {a.max:g} — "
+              f"{'OVER BUDGET' if over else 'within budget'}")
+        return 1 if over else 0
     return 0
 
 
@@ -126,7 +132,9 @@ def _add_edit_parsers(sub) -> None:
     aca.set_defaults(fn=_h_ac_add)
 
     sub.add_parser("list", help="list tasks").set_defaults(fn=_h_list)
-    sub.add_parser("budget", help="complexity rollup").set_defaults(fn=_h_budget)
+    bg = sub.add_parser("budget", help="complexity rollup (+ --max to gate)")
+    bg.add_argument("--max", type=float, help="fail if remaining complexity exceeds this")
+    bg.set_defaults(fn=_h_budget)
 
     sh = sub.add_parser("show", help="show one task")
     sh.add_argument("id")
@@ -166,6 +174,8 @@ def _build_parser() -> argparse.ArgumentParser:
     dn.set_defaults(fn=_h_done)
 
     _add_edit_parsers(sub)
+    from inertia_forge import task_lifecycle
+    task_lifecycle.add_parsers(sub)
     return p
 
 

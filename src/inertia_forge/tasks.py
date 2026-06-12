@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 STORE = Path(".forge") / "forge_tasks.json"
@@ -36,7 +37,7 @@ TASK_ID_RE = re.compile(r"^T\d+\.\d+$")
 
 # ── Store I/O ────────────────────────────────────────────────────────
 def _empty() -> dict:
-    return {"plan": None, "active_task": None, "tasks": {}}
+    return {"plan": None, "active_task": None, "tasks": {}, "archived": {}}
 
 
 def load() -> dict:
@@ -50,6 +51,7 @@ def load() -> dict:
     data.setdefault("plan", None)
     data.setdefault("active_task", None)
     data.setdefault("tasks", {})
+    data.setdefault("archived", {})
     return data
 
 
@@ -129,6 +131,7 @@ def complete_task(task_id: str) -> dict:
             "criteria — check them off first",
         )
     task["status"] = "done"
+    task["completed_at"] = datetime.now(timezone.utc).isoformat()
     save(data)
     return task
 
@@ -159,6 +162,11 @@ def add_acceptance(task_id: str, text: str) -> dict:
     return task
 
 
+# Lifecycle store ops (next/archive/restore/list_archived/cleanup_done) live in
+# task_archive.py and are re-exported at the bottom of this module — split out to
+# keep both files under the function-count ceiling.
+
+
 # ── Reads ────────────────────────────────────────────────────────────
 def get_plan() -> dict | None:
     return load().get("plan")
@@ -174,3 +182,14 @@ def list_tasks() -> list[dict]:
 
 def active_task_id() -> str | None:
     return load().get("active_task")
+
+
+# Re-export lifecycle store ops (defined in task_archive to respect the function
+# ceiling). Imported at module bottom so the leaf module can lazily import us back.
+from inertia_forge.task_archive import (  # noqa: E402
+    archive_task,
+    cleanup_done,
+    list_archived,
+    next_task,
+    restore_task,
+)

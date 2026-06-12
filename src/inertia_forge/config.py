@@ -53,6 +53,29 @@ def _coerce(raw: str):
     return raw
 
 
+# Keys other forge commands read. Unknown keys are allowed but flagged.
+KNOWN_KEYS = {"target", "metrics_model", "base_branch", "skills_path"}
+
+
+def _validate() -> int:
+    if not CONFIG.exists():
+        print("(no config — nothing to validate)")
+        return 0
+    try:
+        raw = json.loads(CONFIG.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"[XX] invalid JSON in {CONFIG}: {e}")
+        return 1
+    if not isinstance(raw, dict):
+        print(f"[XX] config must be a JSON object, got {type(raw).__name__}")
+        return 1
+    unknown = sorted(set(raw) - KNOWN_KEYS)
+    if unknown:
+        print(f"[!!] unknown key(s): {', '.join(unknown)} (allowed, but unused by forge)")
+    print(f"[ok] config valid — {len(raw)} key(s), {len(unknown)} unknown")
+    return 0
+
+
 def run_config(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="inertia-forge config")
     sub = p.add_subparsers(dest="sub", required=True)
@@ -60,7 +83,10 @@ def run_config(argv: list[str]) -> int:
     s = sub.add_parser("set"); s.add_argument("key"); s.add_argument("value")
     u = sub.add_parser("unset"); u.add_argument("key")
     sub.add_parser("list")
+    sub.add_parser("validate", help="check config is valid JSON with known keys")
     args = p.parse_args(argv)
+    if args.sub == "validate":
+        return _validate()
     if args.sub == "get":
         val = get(args.key)
         print("" if val is None else val)
