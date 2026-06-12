@@ -20,7 +20,7 @@ class TestAssets:
         from inertia_forge import assets
         roster = assets.agent_names()
         assert set(roster) == {"vector", "piston", "caliper", "bastion",
-                               "sentinel", "gauge", "lattice"}
+                               "sentinel", "gauge", "lattice", "crucible"}
         assert "implementing-with-tdd" in assets.skill_names()
 
     def test_install(self, proj: Path) -> None:
@@ -29,7 +29,7 @@ class TestAssets:
         skills = assets.install_skills(proj)
         assert (proj / ".claude" / "agents" / "piston.md").exists()
         assert (proj / ".claude" / "skills" / "implementing-with-tdd" / "SKILL.md").exists()
-        assert len(agents) == 7 and len(skills) >= 8
+        assert len(agents) == 8 and len(skills) >= 8
 
     def test_cli_list_and_show(self, proj: Path, capsys) -> None:
         assert main(["agents"]) == 0

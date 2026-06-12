@@ -20,22 +20,60 @@ def _path_schema(desc: str) -> dict:
     return {"type": "object", "properties": {"path": {**_STR, "description": desc}}}
 
 
+def _props(**kw: str) -> dict:
+    return {"type": "object",
+            "properties": {k: {**_STR, "description": v} for k, v in kw.items()},
+            "required": list(kw)}
+
+
+def _p(a: dict) -> str:
+    return a.get("path", ".")
+
+
 # name -> (description, inputSchema, argv-builder)
 _TOOLS = [
+    # ── read / state ────────────────────────────────────────────────
     ("forge_status", "Active forge session + plan/tasks + last/next", {"type": "object"},
      lambda a: ["status"]),
-    ("forge_arch", "Deterministic architecture check of a path", _path_schema("file/dir"),
-     lambda a: ["arch", a.get("path", ".")]),
-    ("forge_check", "Project gate: arch + secrets on a path", _path_schema("project path"),
-     lambda a: ["check", a.get("path", ".")]),
-    ("forge_sweep", "Find unused imports in a path", _path_schema("file/dir"),
-     lambda a: ["sweep", a.get("path", ".")]),
+    ("forge_json", "Machine-readable state (status/tasks/graph/plan/consistency/freshness/budget)",
+     _props(query="one of: status, tasks, graph, plan, consistency, freshness, budget"),
+     lambda a: ["json", a.get("query", "status")]),
+    ("forge_tasks", "List the native task store", {"type": "object"}, lambda a: ["task", "list"]),
     ("forge_skills", "List the registered skills + evidence modes", {"type": "object"},
      lambda a: ["skills"]),
-    ("forge_tasks", "List the native task store", {"type": "object"},
-     lambda a: ["task", "list"]),
-    ("forge_doctor", "Health check of the forge setup", {"type": "object"},
-     lambda a: ["doctor"]),
+    ("forge_doctor", "Health check of the forge setup", {"type": "object"}, lambda a: ["doctor"]),
+    # ── analysis / gates (read-only) ────────────────────────────────
+    ("forge_arch", "Architecture check (size/structure)", _path_schema("file/dir"),
+     lambda a: ["arch", _p(a)]),
+    ("forge_check", "Project gate: arch + secrets", _path_schema("project path"),
+     lambda a: ["check", _p(a)]),
+    ("forge_sweep", "Find unused imports", _path_schema("file/dir"), lambda a: ["sweep", _p(a)]),
+    ("forge_review", "Review smells: debug leftovers, markers, endpoints", _path_schema("file/dir"),
+     lambda a: ["review", _p(a)]),
+    ("forge_vet", "Insecure-code scan (eval/exec/shell=True/pickle/...)", _path_schema("file/dir"),
+     lambda a: ["vet", _p(a)]),
+    ("forge_complexity", "Cyclomatic complexity per function", _path_schema("file/dir"),
+     lambda a: ["complexity", _p(a)]),
+    ("forge_imports", "Module import graph + circular-import detection", _path_schema("project/pkg"),
+     lambda a: ["imports", _p(a)]),
+    ("forge_dead_code", "Defined-but-never-referenced symbols", _path_schema("project/pkg"),
+     lambda a: ["dead-code", _p(a)]),
+    ("forge_docs", "Docstring coverage of the public surface", _path_schema("file/dir"),
+     lambda a: ["docs", _p(a)]),
+    ("forge_types", "Type-hint coverage", _path_schema("file/dir"), lambda a: ["types", _p(a)]),
+    ("forge_qc", "Run a declarative QC suite (.qc.yaml)", _props(suite="path to a .qc.yaml"),
+     lambda a: ["qc", a.get("suite", "")]),
+    # ── gated tools (enforced execution / file ops) ─────────────────
+    ("forge_run", "GATED command execution — blocked refused, review refused (safe)",
+     _props(command="the command to run"), lambda a: ["run", *a.get("command", "").split()]),
+    ("forge_write", "GATED write — containment-tier checked",
+     _props(path="file path", content="content to write"),
+     lambda a: ["write", a.get("path", ""), "--content", a.get("content", "")]),
+    ("forge_edit", "GATED edit — exact unique-match replacement, containment-checked",
+     _props(path="file path", old="exact text to replace", new="replacement"),
+     lambda a: ["edit", a.get("path", ""), "--old", a.get("old", ""), "--new", a.get("new", "")]),
+    ("forge_view", "GATED read — blocked paths refused", _path_schema("file path"),
+     lambda a: ["view", _p(a)]),
 ]
 
 

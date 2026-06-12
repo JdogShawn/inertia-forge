@@ -108,6 +108,7 @@ _DISPATCH = {
     "write": ("inertia_forge.tools", "run_write"),
     "edit": ("inertia_forge.tools", "run_edit"),
     "view": ("inertia_forge.tools", "run_view"),
+    "qc": ("inertia_forge.qc", "run_qc"),
 }
 
 

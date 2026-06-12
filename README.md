@@ -115,7 +115,8 @@ inertia-forge status
 | `inertia-forge install-hook` | install a native git pre-commit running the gate |
 | `inertia-forge wizard` | one-command guided onboarding (install + health + the loop) |
 | `inertia-forge audit <sibling-repo>` | cross-repo impact — shared contracts a sibling consumes + its health |
-| `inertia-forge mcp serve/tools` | MCP server exposing the forge's tools to any client |
+| `inertia-forge qc <suite.yaml>` | declarative QC runner — scenarios of CLI/file assertions (run+expect_exit/contains, file_exists/contains); exits 1 on any failure |
+| `inertia-forge mcp serve/tools` | MCP server exposing **20 tools** to any client — state, the full analysis suite, and the gated run/write/edit/view |
 | `inertia-forge banner` / `logo [--variant full/compact/tiny]` | the INERTIA atom + wordmark — the forge's branded marks |
 | `inertia-forge statusline` | Claude Code status segment: `⚛ INERTIA forge · <state>` (reads status JSON on stdin) |
 | `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
@@ -245,6 +246,7 @@ the methodology it follows. `inertia-forge init` installs both into `.claude/`.
 | **Bastion** | pre-execution security gate — **blocks** dangerous ops |
 | **Sentinel** | security audit — scans & reports (read-only) |
 | **Gauge** | QA — proves real behavior with tests |
+| **Crucible** | QC / regression — runs the full gate battery, coverage, and `.qc.yaml` suites before a release |
 | **Lattice** | cross-cutting — maps how a change ripples across modules |
 
 **Skill methodology docs** (`.claude/skills/<name>/SKILL.md`) ship for every
