@@ -9,17 +9,72 @@ shrugs off outliers). Deterministic — same records, same numbers.
 """
 from __future__ import annotations
 
-import argparse
 import statistics
 
 
 def record(estimated: float, actual: float, label: str | None = None,
-           task_type: str = "", duration_seconds: float | None = None) -> None:
+           task_type: str = "", duration_seconds: float | None = None,
+           outcome: str | None = None, complexity: float | None = None) -> None:
     from inertia_forge.telemetry import record as trecord
     detail: dict = {"estimated": float(estimated), "actual": float(actual), "type": task_type}
     if duration_seconds is not None:
         detail["duration"] = float(duration_seconds)
+    if outcome is not None:
+        detail["outcome"] = outcome
+    if complexity is not None:
+        detail["complexity"] = float(complexity)
     trecord("calibration", label or "estimate", float(actual), detail)
+
+
+def _details(task_type: str | None = None) -> list[dict]:
+    """Full calibration-record detail dicts, optionally filtered to a type."""
+    from inertia_forge.telemetry import events
+    out = []
+    for ev in events(kind="calibration", limit=2000):
+        d = ev.get("detail") or {}
+        if d.get("estimated") and (not task_type or d.get("type", "") == task_type):
+            out.append(d)
+    return out
+
+
+# Default effort by task-type name (overridden by complexity when present).
+_EFFORT_BY_TYPE = {"test": "low", "docs": "low", "chore": "low", "style": "low",
+                   "bugfix": "medium", "structural": "medium", "fix": "medium",
+                   "refactor": "high", "feature": "high", "generation": "high", "rewrite": "high"}
+
+
+def effort_for_type(task_type: str) -> str:
+    return _EFFORT_BY_TYPE.get(task_type, "medium")
+
+
+def type_stats(task_type: str = "", family: str = "anthropic") -> dict | None:
+    """The full per-type calibration record (sample_count, avg/std/p80 tokens,
+    avg_duration, success_rate, recommended tier/model/effort, MAPE, cx/min)."""
+    from inertia_forge.models import recommend_model
+    dets = _details(task_type or None)
+    if not dets:
+        return None
+    actuals = [d["actual"] for d in dets]
+    avg_tokens = round(statistics.fmean(actuals), 1)
+    durs = [d["duration"] for d in dets if "duration" in d]
+    avg_dur = round(statistics.fmean(durs), 1) if durs else 0.0
+    outcomes = [d["outcome"] for d in dets if "outcome" in d]
+    success_rate = (round(100 * sum(o == "success" for o in outcomes) / len(outcomes), 1)
+                    if outcomes else None)
+    cxs = [float(d["complexity"]) for d in dets if "complexity" in d]
+    cx_per_minute = (round(statistics.fmean(cxs) / (avg_dur / 60), 3) if cxs and avg_dur else None)
+    _, mape, _ = accuracy(task_type or None)
+    tier, model = recommend_model(avg_tokens, family)
+    rec_effort = effort(statistics.fmean(cxs)) if cxs else effort_for_type(task_type)
+    return {
+        "task_type": task_type or "all", "sample_count": len(dets),
+        "avg_tokens": avg_tokens, "std_dev": round(statistics.pstdev(actuals), 1),
+        "p80_tokens": round(_percentile(sorted(actuals), 80), 1),
+        "avg_duration_seconds": avg_dur, "success_rate": success_rate,
+        "recommended_tier": tier, "recommended_model": model,
+        "recommended_effort": rec_effort, "estimation_mape": mape,
+        "cx_per_minute": cx_per_minute,
+    }
 
 
 def durations(task_type: str | None = None) -> list[float]:
@@ -101,75 +156,3 @@ def budget_fit(estimated: float, budget: float, target: float = 0.8) -> dict[str
     util = estimated / budget if budget else 0.0
     return {"fits": util <= target, "utilization": round(util, 3)}
 
-
-def run_calibrate(argv: list[str]) -> int:
-    p = argparse.ArgumentParser(prog="inertia-forge calibrate")
-    sub = p.add_subparsers(dest="sub", required=True)
-    r = sub.add_parser("record", help="log an estimate vs its actual")
-    r.add_argument("--estimated", type=float, required=True)
-    r.add_argument("--actual", type=float, required=True)
-    r.add_argument("--type", default="", help="task type (e.g. structural/generation/test)")
-    r.add_argument("--duration", type=float, default=None, help="actual duration in seconds")
-    r.add_argument("--label")
-    a = sub.add_parser("accuracy", help="MAPE + bias across records")
-    a.add_argument("--type", default=None)
-    e = sub.add_parser("estimate", help="forward token baseline (mean + std + p80)")
-    e.add_argument("--type", default="")
-    du = sub.add_parser("duration", help="forward duration estimate (avg + p80 minutes)")
-    du.add_argument("--type", default="")
-    md = sub.add_parser("model", help="recommend a model tier for a type")
-    md.add_argument("--type", default=""); md.add_argument("--family", default="anthropic")
-    ef = sub.add_parser("effort", help="effort level for a complexity score")
-    ef.add_argument("complexity", type=float)
-    bg = sub.add_parser("budget", help="does an estimate fit a budget?")
-    bg.add_argument("--estimated", type=float, required=True)
-    bg.add_argument("--budget", type=float, required=True)
-    bg.add_argument("--target", type=float, default=0.8)
-    return _dispatch(p.parse_args(argv))
-
-
-def _dispatch(args: argparse.Namespace) -> int:
-    from inertia_forge.glyphs import g, seal
-    if args.sub == "record":
-        record(args.estimated, args.actual, args.label, args.type, args.duration)
-        print(f"{seal('ok')} recorded estimate {args.estimated:g} vs actual {args.actual:g}")
-        return 0
-    if args.sub == "estimate":
-        base = baselines().get(args.type or "")
-        if not base:
-            print(f"(no calibration data for type {args.type or 'all'!r})")
-            return 0
-        print(f"{seal('ok')} {args.type or 'all'}: n={base['n']:g} {g('dot')} mean {base['mean']:g} "
-              f"{g('dot')} std {base['std']:g} {g('dot')} p80 {base['p80']:g}")
-        return 0
-    if args.sub == "duration":
-        est = estimate_duration(args.type or None)
-        if not est:
-            print(f"(no duration data for type {args.type or 'all'!r})")
-            return 0
-        print(f"{seal('ok')} {args.type or 'all'}: n={est['n']:g} {g('dot')} avg {est['avg_minutes']:g}min "
-              f"{g('dot')} p80 {est['p80_minutes']:g}min")
-        return 0
-    if args.sub == "model":
-        from inertia_forge.models import recommend_model
-        avg = (baselines().get(args.type or "") or {}).get("mean", 0.0)
-        tier, model = recommend_model(avg, args.family)
-        print(f"{seal('ok')} {args.type or 'all'} (avg {avg:g} tokens) {g('arrow_r')} "
-              f"{args.family} {g('dot')} {tier} {g('dot')} {model}")
-        return 0
-    if args.sub == "effort":
-        print(f"{seal('ok')} complexity {args.complexity:g} {g('arrow_r')} {effort(args.complexity)}")
-        return 0
-    if args.sub == "budget":
-        fit = budget_fit(args.estimated, args.budget, args.target)
-        verdict = "fits" if fit["fits"] else "OVER budget"
-        print(f"{seal('ok' if fit['fits'] else 'error')} {args.estimated:g}/{args.budget:g} "
-              f"= {fit['utilization']:g} util (target {args.target:g}) {g('dot')} {verdict}")
-        return 0 if fit["fits"] else 1
-    n, mape, bias = accuracy(args.type)
-    if not n:
-        print("(no calibration data — `calibrate record --estimated N --actual M`)")
-        return 0
-    tend = "over-estimates" if bias < 1 else ("under-estimates" if bias > 1 else "spot-on")
-    print(f"{seal('ok')} {n} sample(s) {g('dot')} MAPE {mape:g}% {g('dot')} bias {bias:g}x ({tend})")
-    return 0

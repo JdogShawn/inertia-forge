@@ -5,10 +5,21 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.48.0
+- `invoke` — the one opt-in LLM bridge. Shell out to a coding-agent CLI
+  (`claude -p … --output-format json`, or `codex exec`), parse
+  result/cost/tokens/session, accumulate against a token budget, and record the
+  call to telemetry. The deterministic core never calls it; `AgentSession`
+  supports driver/navigator tool presets, permission modes, and session continue.
+- `calibrate stats --type T [--family F]` — the full per-type record in one view:
+  sample count, std_dev, p80, avg duration, success rate, MAPE, complexity/min,
+  and recommended tier · model · effort. `record` now also takes `--outcome`
+  and `--complexity`, which feed success rate and effort classification.
+
 ## 0.47.0
-- `calibrate` reaches deterministic parity: per-type **std_dev** (population),
-  `effort <complexity>`, `budget`, full **duration** estimate (avg + p80
-  minutes), and a `model` recommendation per type.
+- `calibrate` gains per-type **std_dev** (population), `effort <complexity>`,
+  `budget`, full **duration** estimate (avg + p80 minutes), and a `model`
+  recommendation per type.
 - `models` — **LLM-aware** model recommender (the forge recommends, never calls).
   Family-agnostic tiers (small/mid/frontier) with a current 2026 registry
   (anthropic/openai/codex/google/kimi/grok/deepseek/qwen/glm), overridable in

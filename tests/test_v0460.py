@@ -1,5 +1,5 @@
-"""v0.46.0 — calibrate reaches deterministic parity with the real engine:
-per-type std_dev (population), effort classification, and budget-fit.
+"""v0.46.0 — calibrate gains deterministic per-type std_dev (population),
+effort classification, and budget-fit.
 """
 from __future__ import annotations
 
