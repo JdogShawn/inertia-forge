@@ -112,6 +112,8 @@ _DISPATCH = {
     "telemetry": ("inertia_forge.telemetry", "run_telemetry"),
     "semantic": ("inertia_forge.semantic", "run_semantic"),
     "suggest-split": ("inertia_forge.splitter", "run_suggest_split"),
+    "calibrate": ("inertia_forge.calibrate", "run_calibrate"),
+    "query": ("inertia_forge.query", "run_query"),
 }
 
 
