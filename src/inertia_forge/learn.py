@@ -40,6 +40,18 @@ def search(term: str) -> list[dict]:
             or any(low in tag.lower() for tag in e.get("tags", []))]
 
 
+def synthesize() -> list[tuple[str, list[str]]]:
+    """Cluster insights by tag, most-frequent first. Deterministic, no model.
+
+    Returns [(tag, [texts])] sorted by count desc then tag; untagged entries
+    group under '(untagged)'."""
+    clusters: dict[str, list[str]] = {}
+    for e in all_entries():
+        for tag in e.get("tags", []) or ["(untagged)"]:
+            clusters.setdefault(tag, []).append(e.get("text", ""))
+    return sorted(clusters.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+
+
 def _show(entries: list[dict]) -> None:
     if not entries:
         print("(none)")
@@ -55,7 +67,7 @@ def run_learn(argv: list[str]) -> int:
         return 1
     # Shorthand: `learn "free text" [--tag T]` == `learn add ...` — inject the
     # subcommand so argparse (and --tag) work, instead of choking on the text.
-    if argv[0] not in ("add", "list", "search"):
+    if argv[0] not in ("add", "list", "search", "synthesize"):
         argv = ["add"] + argv
 
     p = argparse.ArgumentParser(prog="inertia-forge learn")
@@ -66,12 +78,22 @@ def run_learn(argv: list[str]) -> int:
     sub.add_parser("list", help="list all insights")
     s = sub.add_parser("search", help="search insights")
     s.add_argument("term")
+    sub.add_parser("synthesize", help="cluster insights by tag (themes)")
     args = p.parse_args(argv)
     if args.sub == "list":
         _show(all_entries())
         return 0
     if args.sub == "search":
         _show(search(args.term))
+        return 0
+    if args.sub == "synthesize":
+        clusters = synthesize()
+        if not clusters:
+            print("(no insights yet)")
+        for tag, texts in clusters:
+            print(f"{tag} ({len(texts)}):")
+            for txt in texts:
+                print(f"  - {txt}")
         return 0
     add(" ".join(args.text), args.tags)
     print("captured.")

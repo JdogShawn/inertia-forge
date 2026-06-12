@@ -71,6 +71,8 @@ inertia-forge status
 | `inertia-forge json <query>` | machine-readable state for agents (`status`/`tasks`/`graph`/`plan`/`consistency`/`freshness`/`budget`) in one envelope: `{status, data, errors}` |
 | `inertia-forge preflight [--path DIR] [--tests DIR]` | composite readiness gate: clean tree + active plan + arch (0 P0) + consistency (+ tests); exits 1 on any fail |
 | `inertia-forge validate-store` | integrity-check the `.forge` JSON stores (shape, task fields, ids, statuses) |
+| `inertia-forge dead-code [path] [--strict]` | project-wide dead-symbol finder — top-level defs never referenced anywhere (defs from src, refs from src+tests); advisory P2 |
+| `inertia-forge learn synthesize` | cluster captured insights by tag into themes (deterministic, no model) |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |

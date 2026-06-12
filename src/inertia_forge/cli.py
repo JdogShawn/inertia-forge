@@ -94,6 +94,7 @@ _DISPATCH = {
     "json": ("inertia_forge.jsonout", "run_json"),
     "preflight": ("inertia_forge.preflight", "run_preflight"),
     "validate-store": ("inertia_forge.storecheck", "run_validate_store"),
+    "dead-code": ("inertia_forge.deadcode", "run_dead_code"),
 }
 
 
