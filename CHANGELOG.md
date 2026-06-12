@@ -5,6 +5,12 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.56.0
+- `ignite` ingest now reads **`depends_on:`** and **`requires:`** from a backlog,
+  so a backlog drives the full pipeline: dependency-ordered waves (Kahn levels)
+  and human-gated pauses (`requires: human`) are populated into the store at
+  ingest — `ignite run` then executes in order and pauses at gated tasks.
+
 ## 0.55.0
 - Naming consistency: the autonomous pipeline is named **ignite** throughout —
   the internal modules (`ignite_engine`, `ignite_runstate`, `ignite_commit`,

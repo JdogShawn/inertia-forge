@@ -26,7 +26,8 @@ from inertia_forge import state as st, tasks as t
 
 _TASK_HDR = re.compile(r"^##\s+(T\d+\.\d+)\s*[:\-]?\s*(.*)$")
 _AC = re.compile(r"^\s*-\s*\[[ xX]\]\s*(.+)$")
-_FIELD = re.compile(r"^(complexity|verify|type)\s*:\s*(.+)$", re.IGNORECASE)
+_FIELD = re.compile(r"^(complexity|verify|type|depends_on|requires)\s*:\s*(.+)$", re.IGNORECASE)
+_DEP_RE = re.compile(r"T\d+\.\d+")
 
 # Which agent should pick up work classified to a given skill.
 _SKILL_AGENT = {
@@ -48,7 +49,8 @@ def parse_backlog(text: str) -> tuple[dict, list[dict]]:
         hdr = _TASK_HDR.match(line)
         if hdr:
             cur = {"id": hdr.group(1), "title": hdr.group(2).strip() or hdr.group(1),
-                   "complexity": 0.0, "ac": [], "verify": ""}
+                   "complexity": 0.0, "ac": [], "verify": "",
+                   "depends_on": [], "requires": "autonomous"}
             tasks.append(cur)
             continue
         if line.startswith("# ") and cur is None:
@@ -67,6 +69,10 @@ def parse_backlog(text: str) -> tuple[dict, list[dict]]:
                 cur["complexity"] = float(val) if val.replace(".", "", 1).isdigit() else 0.0
             elif key == "verify" and cur is not None:
                 cur["verify"] = val
+            elif key == "depends_on" and cur is not None:
+                cur["depends_on"] = _DEP_RE.findall(val) if val.lower() not in ("none", "n/a") else []
+            elif key == "requires" and cur is not None:
+                cur["requires"] = val.lower()
     return plan, tasks
 
 
@@ -105,17 +111,35 @@ def run_ignite(argv: list[str]) -> int:
         print(f"refusing to ignite — {len(errors)} backlog error(s); run "
               f"`inertia-forge backlog validate {path}`")
         return 1
-    plan, parsed = parse_backlog(text)
-    ptype = plan["type"] if plan["type"] in t.VALID_PLAN_TYPES else "feature"
-    t.create_plan(ptype, plan["title"])
+    return _ingest(text)
+
+
+def _create_tasks(parsed: list[dict]) -> tuple[list[dict], list[str]]:
+    """Add tasks (with deps) to the store, then wire human-gating. Returns (created, errors)."""
     created, errors = [], []
     for task in parsed:
         try:
-            t.add_task(task["id"], task["title"], task["complexity"], task["ac"], task["verify"])
+            t.add_task(task["id"], task["title"], task["complexity"], task["ac"],
+                       task["verify"], depends_on=task.get("depends_on") or [])
             created.append(task)
         except ValueError as e:
             errors.append(f"{task['id']}: {e}")
+    human = [task["id"] for task in created if task.get("requires") == "human"]
+    if human:
+        data = t.load()
+        for tid in human:
+            if tid in data["tasks"]:
+                data["tasks"][tid]["requires"] = "human"
+        t.save(data)
+    return created, errors
 
+
+def _ingest(text: str) -> int:
+    """Parse a backlog → native plan + tasks (deps + human gates), set continuity."""
+    plan, parsed = parse_backlog(text)
+    ptype = plan["type"] if plan["type"] in t.VALID_PLAN_TYPES else "feature"
+    t.create_plan(ptype, plan["title"])
+    created, errors = _create_tasks(parsed)
     print(f"IGNITED: plan '{plan['title']}' ({ptype}) — {len(created)} task(s) in motion")
     if created:
         first = created[0]
