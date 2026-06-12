@@ -45,6 +45,8 @@ class IgniteConfig:
     review: bool = False
     max_review_iterations: int = 3
     test_instruction: str = ""
+    # tier -> {"max": complexity_ceiling, "model": name}; routes model per task
+    model_routing: dict | None = None
 
 
 @dataclass

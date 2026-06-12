@@ -17,6 +17,20 @@ from inertia_forge.ignite_engine import IgniteConfig, IgniteResult, IgniteRunner
 _PROTECTED = ("main", "master", "dev")
 
 
+def _load_routing() -> dict | None:
+    """Per-complexity model routing from `.forge/models.yaml` (`routing:` section)."""
+    p = Path(".forge") / "models.yaml"
+    if not p.exists():
+        return None
+    import yaml
+    try:
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        return None
+    routing = data.get("routing")
+    return routing if isinstance(routing, dict) else None
+
+
 def _protected_branch(root: Path) -> str | None:
     """The current branch if it's protected (must not commit straight to it)."""
     from inertia_forge.gitcheck import _git
@@ -84,7 +98,7 @@ def run_pipeline(argv: list[str]) -> int:
     cfg = IgniteConfig(
         project_root=Path("."), agent=args.agent, model=args.model,
         token_budget=args.budget, max_parallel=args.max_parallel,
-        dry_run=args.dry_run, review=args.review)
+        dry_run=args.dry_run, review=args.review, model_routing=_load_routing())
     result = IgniteRunner(cfg).run()
 
     if result.paused_task:

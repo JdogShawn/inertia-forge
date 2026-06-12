@@ -19,10 +19,30 @@ def _pr_body(result) -> str:
     if result.failed:
         sections.append("## Failed\n" + "\n".join(
             f"- {t}: {result.failure_reasons.get(t, '?')}" for t in result.failed))
+    if getattr(result, "blocked", None):
+        sections.append("## Blocked\n" + "\n".join(
+            f"- {t}: {result.failure_reasons.get(t, '?')}" for t in result.blocked))
     return "\n\n".join(sections) or "(no tasks completed)"
 
 
-def create_pr(root: Path, result, base: str = "main") -> str | None:
+def _detect_base(root: Path, preferred: str) -> str:
+    """Honor *preferred* if it exists; else prefer dev, fall back to main."""
+    from inertia_forge.gitcheck import _git
+    branches = _git(root, "branch", "--list", "--format=%(refname:short)").split()
+    if preferred in branches:
+        return preferred
+    return "dev" if "dev" in branches else "main"
+
+
+def _pr_exists(root: Path, branch: str) -> bool:
+    r = subprocess.run(
+        ["gh", "pr", "list", "--head", branch, "--state", "open", "--limit", "1",
+         "--json", "url", "-q", ".[0].url"], cwd=str(root), capture_output=True,
+        text=True, encoding="utf-8", errors="replace", check=False)
+    return r.returncode == 0 and bool(r.stdout.strip())
+
+
+def create_pr(root: Path, result, base: str = "main", skip_if_exists: bool = False) -> str | None:
     """Push the branch and open a PR via gh. Returns the PR URL, or None."""
     if not result.completed:
         return None
@@ -35,11 +55,13 @@ def create_pr(root: Path, result, base: str = "main") -> str | None:
                           errors="replace", check=False)
     if push.returncode != 0:
         return None
+    if skip_if_exists and _pr_exists(root, branch):
+        return None
     title = f"ignite: {len(result.completed)} done, {len(result.failed)} failed"
     pr = subprocess.run(
-        ["gh", "pr", "create", "--base", base, "--title", title, "--body", _pr_body(result)],
-        cwd=str(root), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", check=False)
+        ["gh", "pr", "create", "--base", _detect_base(root, base), "--title", title,
+         "--body", _pr_body(result)], cwd=str(root), capture_output=True,
+        text=True, encoding="utf-8", errors="replace", check=False)
     return pr.stdout.strip() if pr.returncode == 0 else None
 
 

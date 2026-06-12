@@ -14,6 +14,31 @@ from inertia_forge import tasks as t
 from inertia_forge.ignite import parse_backlog
 
 
+def _find_cycle(tasks: list[dict]) -> list[str] | None:
+    """One dependency cycle as an id path over the parsed tasks, or None."""
+    ids = {task["id"] for task in tasks}
+    edges = {task["id"]: [d for d in task.get("depends_on", []) if d in ids] for task in tasks}
+    color: dict[str, int] = {tid: 0 for tid in edges}  # 0 white 1 gray 2 black
+    stack: list[str] = []
+
+    def visit(tid: str) -> list[str] | None:
+        color[tid] = 1
+        stack.append(tid)
+        for d in edges[tid]:
+            if color[d] == 1:
+                return stack[stack.index(d):] + [d]
+            if color[d] == 0 and (cyc := visit(d)):
+                return cyc
+        color[tid] = 2
+        stack.pop()
+        return None
+
+    for tid in edges:
+        if color[tid] == 0 and (cyc := visit(tid)):
+            return cyc
+    return None
+
+
 def validate(text: str) -> tuple[list[str], list[str]]:
     """Return (errors, warnings) for a backlog's text. Pure, deterministic."""
     plan, tasks = parse_backlog(text)
@@ -37,6 +62,12 @@ def validate(text: str) -> tuple[list[str], list[str]]:
             errors.append(f"{tid}: no 'verify:' command (TDD requires one)")
         if task["complexity"] <= 0:
             warnings.append(f"{tid}: no complexity estimate")
+        for dep in task.get("depends_on", []):
+            if dep not in seen and dep not in {x["id"] for x in tasks}:
+                errors.append(f"{tid}: depends on unknown task {dep!r}")
+    cyc = _find_cycle(tasks)
+    if cyc:
+        errors.append(f"dependency cycle: {' → '.join(cyc)}")
     return errors, warnings
 
 

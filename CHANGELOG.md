@@ -5,6 +5,19 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.58.0
+- **Per-task model routing** — `ignite run` routes the model by each task's
+  complexity via a `routing:` section in `.forge/models.yaml` (tier → max
+  complexity → model); no routing falls back to the fixed `--model`. Cheaper
+  models for simple tasks, stronger ones for hard tasks.
+- **Backlog dependency validation** — `backlog validate` / `ignite --check` now
+  reject a **dependency cycle** and an **unknown dependency** (a `depends_on`
+  pointing at a task id that isn't in the backlog), alongside the existing
+  type/id/AC/verify/duplicate checks.
+- **PR finalize parity** — `create_pr` auto-detects the base branch (requested
+  base if it exists, else `dev`, else `main`), skips when an open PR already
+  exists for the branch, and the body includes a **Blocked** section.
+
 ## 0.57.0
 - **Dependency-blocked handling** — `ignite run` no longer dispatches a task
   whose dependency didn't complete: it records the dependent as `blocked`

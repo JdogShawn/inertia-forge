@@ -37,15 +37,32 @@ def build_task_prompt(task: dict, test_instruction: str = "") -> str:
     return "\n".join(lines)
 
 
+def resolve_model(task: dict, config) -> str | None:
+    """The model for a task — routed by its complexity, else the fixed model.
+
+    `config.model_routing` is {tier: {"max": ceiling, "model": name}}; the first
+    tier whose ceiling >= the task's complexity wins. No routing → config.model.
+    """
+    routing = getattr(config, "model_routing", None)
+    if not routing:
+        return config.model
+    cx = float(task.get("complexity", 0) or 0)
+    for tier in sorted(routing.values(), key=lambda d: d.get("max", 0)):
+        if cx <= tier.get("max", 0):
+            return tier.get("model")
+    return config.model
+
+
 def agent_task_runner(task: dict, config) -> bool:
     """Dispatch one task to the forge's implementation agent (Piston).
 
     Piston is the read-write TDD driver from the bundled roster; its own `.md`
-    system prompt drives the work. LLM-agnostic — runs on any CLI/model.
+    system prompt drives the work. LLM-agnostic — runs on any CLI/model, with the
+    model routed per task by complexity.
     """
     from inertia_forge.invoker import dispatch
     resp = dispatch("piston", build_task_prompt(task, config.test_instruction),
-                    cli=config.agent, model=config.model,
+                    cli=config.agent, model=resolve_model(task, config),
                     working_dir=config.project_root, token_budget=config.token_budget)
     return not resp.is_error
 
