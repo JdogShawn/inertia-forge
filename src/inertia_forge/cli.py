@@ -100,6 +100,7 @@ _DISPATCH = {
     "vet": ("inertia_forge.vet", "run_vet"),
     "complexity": ("inertia_forge.complexity", "run_complexity"),
     "imports": ("inertia_forge.importgraph", "run_imports"),
+    "docs": ("inertia_forge.docstrings", "run_docs"),
 }
 
 

@@ -78,6 +78,7 @@ inertia-forge status
 | `inertia-forge vet [path] [--since REF]` | insecure-code scan (AST bandit-lite): eval/exec, `shell=True`, SQL-by-f-string (P1); os.system, pickle, `yaml.load`, weak hashes (P2) |
 | `inertia-forge complexity [path] [--max N] [--top N]` | cyclomatic (McCabe) complexity per function — the branch-count metric arch's line check misses; exits 1 over `--max` |
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |
+| `inertia-forge docs [path] [--min PCT] [--list]` | docstring coverage of the public surface (funcs/classes/methods) — the documentation analog of test coverage; gates on `--min` |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
