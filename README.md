@@ -64,6 +64,10 @@ inertia-forge status
 | `inertia-forge scope set <id> --paths …` / `scope check` | declare a task's path scope; flag working-tree changes outside the active task's scope |
 | `inertia-forge freshness [--days N]` | flag stale/missing continuity files (CLAUDE.md, context docs, state) |
 | `inertia-forge tokens <path>… [--glob G] [--quiet]` | deterministic token estimate for a file/tree (no tokenizer dep) |
+| `inertia-forge backlog validate <file>` | validate a backlog .md (plan type, task ids, AC, verify) before ingest; `ignite --check` pre-flights |
+| `inertia-forge plan estimate [--tokens-per-point N] [--threshold T]` | project a session-token cost from remaining complexity; exits 1 if over threshold |
+| `inertia-forge handoff [--write]` | structured end-of-session brief: active task, ready/blocked waves, recent commits, continuity, drift |
+| `inertia-forge prune [--keep N] [--days D]` | bound runtime growth — trim the behavioral log + age out cache blobs |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |

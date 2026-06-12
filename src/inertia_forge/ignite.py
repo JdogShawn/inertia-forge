@@ -79,12 +79,23 @@ def _suggest_agent(plan: dict, first: dict) -> str:
 def run_ignite(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="inertia-forge ignite")
     parser.add_argument("backlog", help="path to a backlog .md file")
+    parser.add_argument("--check", action="store_true",
+                        help="validate the backlog only; do not ingest")
     args = parser.parse_args(argv)
     path = Path(args.backlog)
     if not path.is_file():
         print(f"backlog not found: {path}")
         return 1
-    plan, parsed = parse_backlog(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8")
+    from inertia_forge import backlog as _bk  # local: backlog imports parse_backlog
+    if args.check:
+        return _bk.run_backlog(["validate", str(path)])
+    errors, _ = _bk.validate(text)
+    if errors:
+        print(f"refusing to ignite — {len(errors)} backlog error(s); run "
+              f"`inertia-forge backlog validate {path}`")
+        return 1
+    plan, parsed = parse_backlog(text)
     ptype = plan["type"] if plan["type"] in t.VALID_PLAN_TYPES else "feature"
     t.create_plan(ptype, plan["title"])
     created, errors = [], []

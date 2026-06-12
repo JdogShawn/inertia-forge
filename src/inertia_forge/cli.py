@@ -87,6 +87,10 @@ _DISPATCH = {
     "tokens": ("inertia_forge.tokens", "run_tokens"),
     "freshness": ("inertia_forge.freshness", "run_freshness"),
     "scope": ("inertia_forge.scope", "run_scope"),
+    "backlog": ("inertia_forge.backlog", "run_backlog"),
+    "plan": ("inertia_forge.plan", "run_plan"),
+    "handoff": ("inertia_forge.handoff", "run_handoff"),
+    "prune": ("inertia_forge.retention", "run_prune"),
 }
 
 
