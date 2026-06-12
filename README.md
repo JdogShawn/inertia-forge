@@ -68,6 +68,9 @@ inertia-forge status
 | `inertia-forge plan estimate [--tokens-per-point N] [--threshold T]` | project a session-token cost from remaining complexity; exits 1 if over threshold |
 | `inertia-forge handoff [--write]` | structured end-of-session brief: active task, ready/blocked waves, recent commits, continuity, drift |
 | `inertia-forge prune [--keep N] [--days D]` | bound runtime growth — trim the behavioral log + age out cache blobs |
+| `inertia-forge json <query>` | machine-readable state for agents (`status`/`tasks`/`graph`/`plan`/`consistency`/`freshness`/`budget`) in one envelope: `{status, data, errors}` |
+| `inertia-forge preflight [--path DIR] [--tests DIR]` | composite readiness gate: clean tree + active plan + arch (0 P0) + consistency (+ tests); exits 1 on any fail |
+| `inertia-forge validate-store` | integrity-check the `.forge` JSON stores (shape, task fields, ids, statuses) |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |

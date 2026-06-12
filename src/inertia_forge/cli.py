@@ -91,6 +91,9 @@ _DISPATCH = {
     "plan": ("inertia_forge.plan", "run_plan"),
     "handoff": ("inertia_forge.handoff", "run_handoff"),
     "prune": ("inertia_forge.retention", "run_prune"),
+    "json": ("inertia_forge.jsonout", "run_json"),
+    "preflight": ("inertia_forge.preflight", "run_preflight"),
+    "validate-store": ("inertia_forge.storecheck", "run_validate_store"),
 }
 
 

@@ -13,10 +13,23 @@ from pathlib import Path
 
 
 # ── shared ───────────────────────────────────────────────────────────
+def _dedup_findings(findings: list[dict]) -> list[dict]:
+    """Collapse identical findings (same severity + message), preserving order."""
+    seen: set[tuple] = set()
+    out = []
+    for f in findings:
+        key = (f.get("severity", "P2"), f.get("message", ""))
+        if key not in seen:
+            seen.add(key)
+            out.append(f)
+    return out
+
+
 def _print_findings(findings: list[dict]) -> int:
     """Print findings grouped by severity. Return 1 if any P0, else 0."""
     from inertia_forge.glyphs import g, seal
     from inertia_forge.palette import paint
+    findings = _dedup_findings(findings)
     by_sev: dict[str, list[dict]] = {"P0": [], "P1": [], "P2": []}
     for f in findings:
         by_sev.setdefault(f.get("severity", "P2"), []).append(f)
