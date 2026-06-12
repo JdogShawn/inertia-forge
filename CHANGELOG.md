@@ -5,6 +5,15 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.57.0
+- **Dependency-blocked handling** — `ignite run` no longer dispatches a task
+  whose dependency didn't complete: it records the dependent as `blocked`
+  (reason `dependency_blocked`) and surfaces it. Blocked tasks count toward the
+  circuit breaker. Closes a correctness gap vs the reference pipeline.
+- **Protected-branch refusal** — `ignite run` refuses to run on `main`/`master`/
+  `dev` (where it would commit straight to a protected branch); switch to a
+  feature branch or pass `--force`. `--dry-run` is exempt. Safety gap closed.
+
 ## 0.56.0
 - `ignite` ingest now reads **`depends_on:`** and **`requires:`** from a backlog,
   so a backlog drives the full pipeline: dependency-ordered waves (Kahn levels)

@@ -54,6 +54,7 @@ class IgniteResult:
     completed: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+    blocked: list[str] = field(default_factory=list)
     paused_task: str | None = None
     run_id: str | None = None
     phases_completed: int = 0
@@ -96,7 +97,7 @@ class IgniteRunner:
         self._prepare_targeted_tests()
         res = IgniteResult()
         for wave in taskgraph.parallel_waves():
-            pending = self._phase_pending(wave)
+            pending = self._dispatchable(self._phase_pending(wave), res)
             if not pending:
                 continue
             gated = self._first_gated(pending)
@@ -170,6 +171,20 @@ class IgniteRunner:
                 out.append(tid)
         return out
 
+    def _dispatchable(self, pending: list[str], res: IgniteResult) -> list[str]:
+        """Drop tasks whose dependencies didn't complete — record them blocked."""
+        from inertia_forge import tasks
+        by_id = {x["id"]: x for x in tasks.list_tasks()}
+        out: list[str] = []
+        for tid in pending:
+            deps = by_id.get(tid, {}).get("depends_on", [])
+            if all(by_id.get(d, {}).get("status") == "done" for d in deps):
+                out.append(tid)
+            else:
+                res.blocked.append(tid)
+                res.failure_reasons[tid] = "dependency_blocked"
+        return out
+
     def _first_gated(self, pending: list[str]) -> str | None:
         from inertia_forge import tasks
         for tid in pending:
@@ -184,7 +199,8 @@ class IgniteRunner:
         return plan.get("id", "") if plan else ""
 
     def _check_breaker(self, res: IgniteResult) -> bool:
-        total = len(res.completed) + len(res.failed)
+        failures = len(res.failed) + len(res.blocked)
+        total = len(res.completed) + failures
         if total == 0:
             return False
-        return len(res.failed) / total >= self.config.circuit_breaker_threshold
+        return failures / total >= self.config.circuit_breaker_threshold

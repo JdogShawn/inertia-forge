@@ -14,21 +14,32 @@ from pathlib import Path
 from inertia_forge.ignite_engine import IgniteConfig, IgniteResult, IgniteRunner
 
 
+_PROTECTED = ("main", "master", "dev")
+
+
+def _protected_branch(root: Path) -> str | None:
+    """The current branch if it's protected (must not commit straight to it)."""
+    from inertia_forge.gitcheck import _git
+    branch = _git(root, "branch", "--show-current").strip()
+    return branch if branch in _PROTECTED else None
+
+
 def _exit_code(result: IgniteResult, fin: dict | None) -> int:
     if fin and fin.get("security_blocked"):
         return 2
-    if result.failed or result.circuit_breaker_triggered:
+    if result.failed or result.blocked or result.circuit_breaker_triggered:
         return 1
     return 0
 
 
 def _print(result: IgniteResult, fin: dict | None) -> None:
     from inertia_forge.glyphs import g, seal
-    head = "error" if (result.failed or result.circuit_breaker_triggered) else "ok"
-    print(f"{seal(head)} {len(result.completed)} done "
+    bad = result.failed or result.blocked or result.circuit_breaker_triggered
+    print(f"{seal('error' if bad else 'ok')} {len(result.completed)} done "
           f"({len(result.skipped)} already-satisfied) {g('dot')} "
-          f"{len(result.failed)} failed {g('dot')} {result.phases_completed} phase(s)")
-    for tid in result.failed:
+          f"{len(result.failed)} failed {g('dot')} {len(result.blocked)} blocked "
+          f"{g('dot')} {result.phases_completed} phase(s)")
+    for tid in result.failed + result.blocked:
         print(f"  {seal('error')} {tid}: {result.failure_reasons.get(tid, '?')}")
     if not fin:
         return
@@ -57,7 +68,18 @@ def run_pipeline(argv: list[str]) -> int:
                    help="skip the security gate + branch review after execution")
     p.add_argument("--pr", action="store_true", help="open a PR after a clean finalize")
     p.add_argument("--base", default="main", help="base branch for finalize/PR")
+    p.add_argument("--force", action="store_true",
+                   help="allow running on a protected branch (main/master/dev)")
     args = p.parse_args(argv)
+
+    if not args.dry_run and not args.force:
+        protected = _protected_branch(Path("."))
+        if protected:
+            from inertia_forge.glyphs import seal
+            print(f"{seal('error')} refusing to run on protected branch "
+                  f"'{protected}' — switch to a feature branch "
+                  f"(git checkout -b <name>) or pass --force")
+            return 2
 
     cfg = IgniteConfig(
         project_root=Path("."), agent=args.agent, model=args.model,
