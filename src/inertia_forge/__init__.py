@@ -18,7 +18,7 @@ Evidence modes (per skill, in skill_definitions.yaml):
   - stamped        : SHA-256 methodology stamp (reasoning skills)
   - enforcer       : pluggable per-skill enforcer (register_enforcer); falls
                      back to stamped if none registered
-  - task_management: real task/plan/AC state (needs the [paircoder] extra)
+  - task_management: real task/plan/AC state in the forge's native store
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ from inertia_forge.skill_registry import (
     validate_skill_name,
 )
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 __all__ = [
     "ForgeSkillBridge",

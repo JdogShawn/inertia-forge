@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inertia-forge"
-version = "0.14.0"
+version = "0.15.0"
 description = "A project-agnostic, deterministic skill-enforcement engine — the only way out is to do the work."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,9 +16,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# `task_management` evidence mode verifies real plan/task/AC state by shelling
-# out to bpsai-pair. Install this extra to use it.
-paircoder = ["bpsai-pair"]
 dev = ["pytest>=7.0", "pytest-cov>=4.0"]
 
 [project.scripts]

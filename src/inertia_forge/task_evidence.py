@@ -2,8 +2,7 @@
 
 INERTIA-native task verifiers — they read the forge's OWN task store
 (inertia_forge.tasks) with ZERO external dependencies, so `task_management`
-mode is fully self-contained. (The optional `paircoder` mode is a separate
-interop path for teams already on bpsai-pair.)
+mode is fully self-contained.
 
 Verifiers are keyed by PHASE name (not skill), so any skill whose steps use the
 standard names gets gated automatically:

@@ -24,7 +24,8 @@ def _h_plan(a: argparse.Namespace) -> int:
 
 
 def _h_add(a: argparse.Namespace) -> int:
-    task = t.add_task(a.id, a.title, a.complexity, a.ac or [], a.verify)
+    task = t.add_task(a.id, a.title, a.complexity, a.ac or [], a.verify,
+                      depends_on=getattr(a, "depends_on", None) or [])
     print(f"added {task['id']} (complexity {task['complexity']:g}, "
           f"{len(task['acceptance_criteria'])} AC)")
     return 0
@@ -164,6 +165,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ad.add_argument("--complexity", type=float, required=True)
     ad.add_argument("--ac", action="append", help="acceptance criterion (repeatable)")
     ad.add_argument("--verify", required=True, help="verification (test) command")
+    ad.add_argument("--depends-on", nargs="*", default=[], help="task ids this depends on")
     ad.set_defaults(fn=_h_add)
 
     st = sub.add_parser("start", help="set active + in_progress")
@@ -181,8 +183,9 @@ def _build_parser() -> argparse.ArgumentParser:
     dn.set_defaults(fn=_h_done)
 
     _add_edit_parsers(sub)
-    from inertia_forge import task_lifecycle
+    from inertia_forge import task_lifecycle, taskgraph_cli
     task_lifecycle.add_parsers(sub)
+    taskgraph_cli.add_parsers(sub)
     return p
 
 

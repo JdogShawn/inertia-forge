@@ -4,7 +4,7 @@
 
 > *Newton's first law for code quality:* work at rest stays at rest, work in motion must clear every gate. That's **inertia** — and it's the law this forge enforces.
 
-INERTIA Forge is the deterministic enforcement core of the **INERTIA** cognition platform, extracted to stand alone. It is **its own tool**, not a wrapper around any other — it ships its own task store, its own analyzer, its own continuity, audit, and containment. It *can* interoperate with bpsai-pair (the optional `paircoder` mode), but it needs nothing but Python.
+INERTIA Forge is the deterministic enforcement core of the **INERTIA** cognition platform, extracted to stand alone. It is **its own tool**, not a wrapper around any other — it ships its own task store, its own analyzer, its own continuity, audit, and containment. It needs nothing but Python.
 
 The forge makes a skill's methodology *mechanically enforced*. Invoking a skill opens a **session** with **blocking gates**. You can't manually close it, you can't skip a gate, and you can't fake evidence — the session auto-closes only when the last blocking gate is recorded with a real, hash-verified result. No escape hatch by design.
 
@@ -16,8 +16,6 @@ The forge makes a skill's methodology *mechanically enforced*. Invoking a skill 
 
 ```bash
 pip install inertia-forge
-# optional extra: the bpsai-pair task backend (native task_management needs nothing)
-pip install "inertia-forge[paircoder]"
 ```
 
 ## Quick start (programmatic)
@@ -56,7 +54,12 @@ inertia-forge status
 | `inertia-forge check [path] [--tests DIR] [--deps]` | **project gate** — arch + secrets (+ tests + dep audit) as one pass/fail (pre-commit/CI) |
 | `inertia-forge sweep [path] [--fix]` | find (or remove) unused imports |
 | `inertia-forge scan-deps [path]` | dependency vulnerability scan (pip-audit, optional) |
-| `inertia-forge task …` | native task store: `plan`/`add`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget [--max]`/`next`/`archive`/`restore`/`list-archived`/`cleanup`/`changelog` |
+| `inertia-forge task …` | native task store: `plan`/`add [--depends-on]`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget [--max]`/`next`/`archive`/`restore`/`list-archived`/`cleanup`/`changelog` |
+| `inertia-forge task deps/ready/graph/estimate/audit` | dependency graph: set deps, list ready (deps-met) tasks, show parallel waves + cycles, heuristic complexity estimate, store-consistency audit |
+| `inertia-forge consistency` | task-store invariants (done-with-unmet-AC, dangling/self deps, cycles) — exits 1 on drift |
+| `inertia-forge role <path>…` | classify files by role (test/cli/config/doc/data/source) |
+| `inertia-forge targeted [--since REF] [files…]` | map changed sources → the test files that cover them (run only what a change can break) |
+| `inertia-forge preset list/show/apply <name>` | named config archetypes (library/service/cli/data) |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
@@ -173,7 +176,6 @@ Each skill picks how a phase is proven, in `skill_definitions.yaml`:
 | `stamped` | SHA-256 methodology stamp — the phase ran | skills whose output is **insight/findings**, not code (review, audit, investigation) |
 | `enforcer` | dispatch to a **registered** per-skill enforcer; falls back to `stamped` if none | custom adversarial / structured checks |
 | `task_management` | real plan/task/AC state in the forge's **own native store** (zero deps) | planning / task-lifecycle skills |
-| `paircoder` | real plan/task/AC state via **bpsai-pair** (needs the `[paircoder]` extra) | teams already on bpsai-pair |
 | `doc_reading` | the skill's methodology doc was actually read (`inertia-forge read <skill>`) | skills you must not run blind |
 
 Per-phase overrides via `phase_evidence:` (e.g. a code skill whose planning phase should gate on task state).
@@ -201,8 +203,6 @@ inertia-forge task list
 ```
 
 Verifier rules (phase-keyed, so any skill using these step names is gated): `budget_check` (every task estimated 0–100), `create_plan` (a valid-typed plan exists), `add_tasks` (≥1 well-formed task with AC + verification), `preflight` (active task is `in_progress`), `complete` (active task `done`, all AC met).
-
-**Already on bpsai-pair?** Use `evidence_mode: paircoder` instead (install `inertia-forge[paircoder]`) and the same gates verify bpsai-pair's `.paircoder/` state. Both backends ship; pick per skill.
 
 ---
 

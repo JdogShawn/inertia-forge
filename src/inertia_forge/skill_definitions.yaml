@@ -17,7 +17,6 @@
 #                   (inertia_forge.register_enforcer); falls back to stamped.
 #   task_management real plan/task/AC state in the forge's NATIVE store
 #                   (manage with `inertia-forge task ...`); zero deps.
-#   paircoder       real plan/task/AC state via bpsai-pair ([paircoder] extra).
 # phase_evidence: {step: mode}  per-phase override (a code skill whose planning
 #                   phase should gate on task state, etc.)
 
@@ -72,7 +71,7 @@ releasing_versions:
     security_check: blocking
 
 # Mixed skill: code phases stay file_analysis; the planning phase gates on real
-# task state when the [paircoder] extra is present (Bundle G per-phase mode).
+# task state in the native store (per-phase evidence mode).
 designing_and_implementing:
   loop_max: 0
   doc: .claude/skills/designing-and-implementing/SKILL.md
@@ -149,7 +148,6 @@ custom_review:
 
 # ── task_management (native — zero deps) ───────────────────────────────
 # Phase names match the native verifiers; manage tasks with `inertia-forge task`.
-# (Switch evidence_mode to `paircoder` to verify bpsai-pair state instead.)
 pc_plan:
   loop_max: 0
   evidence_mode: task_management

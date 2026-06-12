@@ -1,7 +1,7 @@
 """Top-level CLI commands: arch, verify, status, state.
 
 These expose the deterministic engines (the analyzer, the task/state stores) as
-standalone commands — no bpsai-pair required.
+standalone commands — no external CLI required.
 """
 from __future__ import annotations
 

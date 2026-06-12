@@ -140,30 +140,8 @@ def collect_native_task_mode(
     return collect_native_task(skill, phase, target, analysis_dir)
 
 
-def collect_paircoder_mode(
-    skill: str, phase: str, target: str, analysis_dir: Path,
-) -> tuple[list[dict], str]:
-    """`paircoder` mode — verify real bpsai-pair plan/task/AC state.
-
-    Opt-in for users who manage tasks with bpsai-pair (needs the [paircoder]
-    extra at runtime). If the subpackage can't be imported, degrade to stamped.
-    """
-    try:
-        from inertia_forge.paircoder.evidence import collect_paircoder
-    except ImportError:
-        import sys
-        print(
-            "WARNING: evidence_mode 'paircoder' needs the optional "
-            "[paircoder] extra; falling back to stamped.",
-            file=sys.stderr,
-        )
-        return collect_stamped(skill, phase, target, analysis_dir)
-    return collect_paircoder(skill, phase, target, analysis_dir)
-
-
 _KNOWN_EVIDENCE_MODES = (
-    "file_analysis", "stamped", "enforcer", "task_management", "paircoder",
-    "doc_reading",
+    "file_analysis", "stamped", "enforcer", "task_management", "doc_reading",
 )
 
 
@@ -192,8 +170,6 @@ def collect(
         return collect_enforcer(skill, phase, target, analysis_dir)
     if evidence_mode == "task_management":
         return collect_native_task_mode(skill, phase, target, analysis_dir)
-    if evidence_mode == "paircoder":
-        return collect_paircoder_mode(skill, phase, target, analysis_dir)
     if evidence_mode == "doc_reading":
         from inertia_forge.doc_reading import collect_doc_reading
         return collect_doc_reading(skill, phase, target, analysis_dir)

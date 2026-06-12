@@ -100,7 +100,7 @@ def cleanup_death_note_artifacts() -> None:
     Extracted from skill_bridge.py to keep that module under the arch
     line ceiling. Pure side-effect function — safe to call multiple times.
     """
-    dn_path = Path(".paircoder/enforcement/death_note_active.json")
+    dn_path = Path(".forge/enforcement/death_note_active.json")
     if not dn_path.exists():
         return
     try:
@@ -111,7 +111,7 @@ def cleanup_death_note_artifacts() -> None:
     if stage < 12:
         return
     dn_path.unlink(missing_ok=True)
-    enforcement_dir = Path(".paircoder/enforcement")
+    enforcement_dir = Path(".forge/enforcement")
     if enforcement_dir.exists():
         for summary in enforcement_dir.glob("death_note_stage_*_summary.md"):
             summary.unlink(missing_ok=True)

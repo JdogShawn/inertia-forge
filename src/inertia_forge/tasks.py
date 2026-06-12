@@ -1,9 +1,9 @@
 """Native, dependency-free task management (INERTIA-style).
 
-A self-contained plan/task store under ``.forge/forge_tasks.json`` — no
-bpsai-pair, no external CLI. This backs the ``task_management`` evidence mode
-so a forge session can gate on REAL plan/task/acceptance-criteria state that
-the forge itself owns.
+A self-contained plan/task store under ``.forge/forge_tasks.json`` — no external
+CLI, no network. This backs the ``task_management`` evidence mode so a forge
+session can gate on REAL plan/task/acceptance-criteria state that the forge
+itself owns.
 
 Store shape::
 
@@ -76,6 +76,7 @@ def create_plan(plan_type: str, title: str, plan_id: str = "p1") -> dict:
 def add_task(
     task_id: str, title: str, complexity: float,
     acceptance: list[str], verification: str,
+    depends_on: list[str] | None = None,
 ) -> dict:
     if not TASK_ID_RE.match(task_id):
         raise ValueError(f"task id must match T<sprint>.<seq> (got {task_id!r})")
@@ -89,6 +90,7 @@ def add_task(
         "complexity": float(complexity),
         "acceptance_criteria": [{"text": t, "done": False} for t in acceptance],
         "verification": verification,
+        "depends_on": list(depends_on or []),
     }
     save(data)
     return data["tasks"][task_id]
@@ -139,8 +141,9 @@ def complete_task(task_id: str) -> dict:
 def update_task(
     task_id: str, title: str | None = None,
     complexity: float | None = None, verification: str | None = None,
+    depends_on: list[str] | None = None,
 ) -> dict:
-    """Edit a task in place (title / complexity / verification)."""
+    """Edit a task in place (title / complexity / verification / depends_on)."""
     data = load()
     task = _require(data, task_id)
     if title is not None:
@@ -149,6 +152,8 @@ def update_task(
         task["complexity"] = float(complexity)
     if verification is not None:
         task["verification"] = verification
+    if depends_on is not None:
+        task["depends_on"] = list(depends_on)
     save(data)
     return task
 

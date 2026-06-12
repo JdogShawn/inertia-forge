@@ -6,16 +6,22 @@ from __future__ import annotations
 
 
 def next_task() -> dict | None:
-    """The next task to work: the active in_progress task, else the first
-    in_progress, else the first pending."""
+    """The next task to work: the active in_progress task, else any other
+    in_progress, else the first dependency-ready pending task, else (if every
+    pending task is blocked) the first pending task."""
     from inertia_forge.tasks import active_task_id, get_task, list_tasks
     active = active_task_id()
     if active and (a := get_task(active)) and a["status"] == "in_progress":
         return a
-    for status in ("in_progress", "pending"):
-        for tk in list_tasks():
-            if tk["status"] == status:
-                return tk
+    for tk in list_tasks():
+        if tk["status"] == "in_progress":
+            return tk
+    from inertia_forge.taskgraph import ready_tasks
+    if ready := ready_tasks():
+        return ready[0]
+    for tk in list_tasks():
+        if tk["status"] == "pending":
+            return tk
     return None
 
 

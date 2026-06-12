@@ -79,6 +79,10 @@ _DISPATCH = {
     "banner": ("inertia_forge.show", "run_banner"),
     "logo": ("inertia_forge.show", "run_logo"),
     "statusline": ("inertia_forge.statusline", "run_statusline"),
+    "role": ("inertia_forge.roles", "run_role"),
+    "targeted": ("inertia_forge.targeted", "run_targeted"),
+    "consistency": ("inertia_forge.consistency", "run_consistency"),
+    "preset": ("inertia_forge.presets", "run_preset"),
 }
 
 
