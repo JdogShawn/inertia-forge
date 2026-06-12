@@ -41,6 +41,9 @@ class EngageConfig:
     circuit_breaker_threshold: float = 0.5
     dry_run: bool = False
     commit: bool = True
+    targeted_tests: bool = True
+    review: bool = False
+    max_review_iterations: int = 3
     test_instruction: str = ""
 
 
@@ -61,7 +64,8 @@ class EngageResult:
 class EngageRunner:
     """Executes the task graph wave-by-wave with a circuit breaker."""
 
-    def __init__(self, config: EngageConfig | None = None, task_runner=None) -> None:
+    def __init__(self, config: EngageConfig | None = None, task_runner=None,
+                 review_fn=None) -> None:
         self.config = config or EngageConfig()
         if task_runner is not None:
             self._runner = task_runner
@@ -70,9 +74,26 @@ class EngageRunner:
             self.config.commit = False
         else:
             self._runner = lambda task: agent_task_runner(task, self.config)
+        if review_fn is not None:
+            self._review = review_fn
+        elif self.config.review:
+            from inertia_forge.engage_review import review_and_fix
+            self._review = lambda task: review_and_fix(
+                task, self.config, self.config.max_review_iterations)
+        else:
+            self._review = None
+
+    def _prepare_targeted_tests(self) -> None:
+        if self.config.targeted_tests and not self.config.test_instruction:
+            from inertia_forge.engage_targeted import (
+                build_test_instruction, resolve_test_targets,
+            )
+            self.config.test_instruction = build_test_instruction(
+                resolve_test_targets(self.config.project_root))
 
     def run(self) -> EngageResult:
         from inertia_forge import taskgraph
+        self._prepare_targeted_tests()
         res = EngageResult()
         for wave in taskgraph.parallel_waves():
             pending = self._phase_pending(wave)
@@ -125,6 +146,11 @@ class EngageRunner:
             commit_task(self.config.project_root, tid, task.get("title", ""), start)
             if not verify_output(self.config.project_root):
                 self._fail(tid, "no_meaningful_output", task, dur, res)
+                return
+        if self._review is not None:
+            outcome = self._review(task)
+            if outcome is not None and not outcome.resolved:
+                self._fail(tid, "review_unresolved", task, dur, res)
                 return
         mark_task_done(tid)
         res.completed.append(tid)

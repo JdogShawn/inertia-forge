@@ -5,6 +5,18 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.50.0
+- `engage` gains depth on each task:
+  - **Targeted tests** — maps the run's changed files to their conventional test
+    paths (`git diff` → `tests/test_<mod>.py`) and tells the driver to run only
+    those, not the whole suite. Deterministic; `--no-targeted-tests` opts out.
+  - **Review-and-fix loop** (`--review`) — after a task is committed and
+    verified, dispatch a reviewer; on a blocking verdict, dispatch a fixer and
+    re-review up to `--max-review-iterations`. The loop and classification are
+    deterministic; only the review/fix judgments use an agent. Off by default.
+  - **Recovery guidance** — when the circuit breaker trips, name the dominant
+    failure mode and the next concrete action instead of just "tripped".
+
 ## 0.49.0
 - `engage` — the autonomous task-execution loop. Walks the task graph wave by
   wave (`taskgraph.parallel_waves` levels are the phases); for each pending task

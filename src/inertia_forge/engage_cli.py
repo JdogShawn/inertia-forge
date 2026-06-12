@@ -24,6 +24,11 @@ def _add_run_flags(p: argparse.ArgumentParser) -> None:
     p.add_argument("--budget", type=int, default=None, help="token budget for the run")
     p.add_argument("--no-commit", action="store_true",
                    help="do not commit or output-verify (dispatch only)")
+    p.add_argument("--no-targeted-tests", action="store_true",
+                   help="run the full suite, not just tests for changed files")
+    p.add_argument("--review", action="store_true",
+                   help="dispatch a reviewer (and fixer loop) after each task")
+    p.add_argument("--max-review-iterations", type=int, default=3)
 
 
 def _config(args: argparse.Namespace) -> EngageConfig:
@@ -32,6 +37,8 @@ def _config(args: argparse.Namespace) -> EngageConfig:
         permission_mode=args.permission_mode, token_budget=args.budget,
         max_parallel=args.max_parallel, dry_run=args.dry_run,
         commit=not (args.no_commit or args.dry_run),
+        targeted_tests=not args.no_targeted_tests,
+        review=args.review, max_review_iterations=args.max_review_iterations,
     )
 
 
@@ -47,7 +54,10 @@ def _print_result(res: EngageResult) -> None:
     for tid in res.failed:
         print(f"  {seal('error')} {tid}: {res.failure_reasons.get(tid, '?')}")
     if res.circuit_breaker_triggered:
+        from inertia_forge.engage_recovery import recovery_guidance
         print(f"{seal('error')} circuit breaker tripped — failure ratio too high")
+        for line in recovery_guidance(res.failure_reasons):
+            print(f"  {line}")
 
 
 def _exit_code(res: EngageResult) -> int:
