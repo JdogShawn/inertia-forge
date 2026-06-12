@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from inertia_forge.manifest import ForgeManifest
 
 if TYPE_CHECKING:
-    from inertia_forge.finding_tracker import FindingTracker
+    from inertia_forge.data_contracts import FindingTracker
 
 # ── Step Constants ──────────────────────────────────────────
 

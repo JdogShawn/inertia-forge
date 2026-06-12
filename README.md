@@ -79,6 +79,7 @@ inertia-forge status
 | `inertia-forge complexity [path] [--max N] [--top N]` | cyclomatic (McCabe) complexity per function — the branch-count metric arch's line check misses; exits 1 over `--max` |
 | `inertia-forge suggest-split <file>` | module-split adviser — when a file is oversized, recommends which prefix-clustered function group to extract into a sibling module (advisory) |
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |
+| `inertia-forge xref [path]` | cross-reference integrity — `from pkg.mod import X` where X isn't defined/imported/exported in `mod` (a **dangling import**, or **orphaned test** if from a test file). Catches broken refs from a refactor statically; exits 1 |
 | `inertia-forge docs [path] [--min PCT] [--list]` | docstring coverage of the public surface (funcs/classes/methods) — the documentation analog of test coverage; gates on `--min` |
 | `inertia-forge types [path] [--min PCT] [--list]` | type-hint coverage — fraction of public functions with all params (self excluded) and return annotated; gates on `--min` |
 | `inertia-forge changelog [--since REF] [--until REF]` | conventional-commit changelog (release notes) from git history, grouped by type with breaking changes surfaced; defaults to since-last-tag |
