@@ -116,6 +116,7 @@ _DISPATCH = {
     "calibrate": ("inertia_forge.calibrate_cli", "run_calibrate"),
     "models": ("inertia_forge.models", "run_models"),
     "invoke": ("inertia_forge.agent", "run_invoke"),
+    "engage": ("inertia_forge.engage_cli", "run_engage"),
     "query": ("inertia_forge.query", "run_query"),
     "xref": ("inertia_forge.xref", "run_xref"),
     "scan": ("inertia_forge.scan", "run_scan"),

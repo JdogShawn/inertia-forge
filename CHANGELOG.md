@@ -5,6 +5,19 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.49.0
+- `engage` — the autonomous task-execution loop. Walks the task graph wave by
+  wave (`taskgraph.parallel_waves` levels are the phases); for each pending task
+  it skips when the acceptance criteria are already satisfied on disk, otherwise
+  dispatches it, commits the result, verifies the commit carried meaningful
+  output, and marks it done. A circuit breaker halts the run when the failure
+  ratio crosses a threshold; a human-gated task (`requires: human`) pauses to
+  resumable state under `.forge/engage/runs/`. `engage resume <run-id>` and
+  `engage runs` manage paused runs.
+- **Zero-LLM by construction:** `engage --dry-run` (or any injected task runner)
+  drives the entire loop with no model calls. The agent dispatch reuses the
+  `invoke` bridge; outcomes feed telemetry and the calibration loop.
+
 ## 0.48.0
 - `invoke` — the one opt-in LLM bridge. Shell out to a coding-agent CLI
   (`claude -p … --output-format json`, or `codex exec`), parse
