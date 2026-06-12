@@ -1,6 +1,5 @@
-"""v0.33.0 (enriched v0.39.0) — module split adviser. Threshold-gated, class-aware
-(cross-referenced to paircoder's SplitAnalyzer: line threshold + class/function
-components).
+"""v0.33.0 (enriched v0.39.0) — module split adviser. Threshold-gated and
+class-aware: classes and cohesive function groups become extraction components.
 """
 from __future__ import annotations
 
