@@ -95,7 +95,7 @@ class TestReviewLoop:
         from inertia_forge.review_agents import ReviewResult
         monkeypatch.setattr("inertia_forge.review_agents.review_diff",
                             lambda *a, **k: ReviewResult(
-                                action="request_changes", findings=[("nayru", "### P0 bad")]))
+                                action="request_changes", findings=[("caliper", "### P0 bad")]))
 
         class _Sess:  # the fixer — no-op
             def __init__(self, *a, **k): ...

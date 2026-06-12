@@ -5,11 +5,33 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.54.0
+- **LLM-agnostic provider layer** (`providers`) — the agent bridge is no longer
+  bound to one vendor. A provider is a command template + parse rule; a built-in
+  registry ships adapters for claude · codex · gemini · cursor-agent · ollama ·
+  llm, and `.forge/providers.yaml` adds or overrides any of them. `AgentSession`
+  (and therefore *every* agent-backed capability — ignite, dispatch, review,
+  security, planning) now runs on whatever LLM is configured.
+- **`ignite` is the autonomous pipeline** (the forge's engage), end to end and
+  inertia-native with the bundled agents:
+  - `ignite run` — walk the task graph wave by wave; **Piston** implements each
+    task (gated, targeted tests, optional per-task review), then **finalize**:
+    security-gate the branch with **Bastion** (fail-closed; a P0 blocks and
+    withholds the PR) → review the branch with **Caliper/Sentinel/Lattice** →
+    optional PR. Circuit breaker + recovery; human-gated pause/resume.
+  - `ignite resume <id>` / `ignite runs` — manage paused runs.
+  - `ignite plan "<goal>"` — **Vector** turns intent into a structured plan
+    (summary · phases · files · complexity · risks).
+  - `--dry-run` drives the whole loop with zero model calls.
+- The standalone `engage` command is removed — it lives under `ignite`. The
+  review agents are the forge's own (Caliper/Sentinel/Lattice), dispatched via
+  their bundled definitions.
+
 ## 0.53.0
 - `review-agent [diff|branch|commit]` — **agent-backed code review** (the forge's
-  review intelligence). Dispatches focused reviewers over a diff — `nayru`
-  (quality/correctness), `laverna` (security/OWASP), and `vaivora` (cross-module,
-  added automatically for large diffs) — then classifies the combined findings
+  review intelligence). Dispatches the forge's review agents over a diff —
+  `caliper` (quality/correctness), `sentinel` (security/OWASP), and `lattice`
+  (cross-module, added automatically for large diffs) — then classifies findings
   into a verdict (request_changes / comment / approve) by P0/P1/P2 severity.
   The diff is fenced as untrusted data (prompt-injection guard); reviewers run
   read-only. The severity classification and size heuristic are pure

@@ -46,7 +46,7 @@ def _print_result(res: EngageResult) -> None:
     from inertia_forge.glyphs import g, seal
     if res.paused_task:
         print(f"{seal('warn')} PAUSED at human-gated task {res.paused_task} "
-              f"{g('dot')} resume with: inertia-forge engage resume {res.run_id}")
+              f"{g('dot')} resume with: inertia-forge ignite resume {res.run_id}")
     head = "error" if (res.failed or res.circuit_breaker_triggered) else "ok"
     print(f"{seal(head)} {len(res.completed)} done "
           f"({len(res.skipped)} already-satisfied) {g('dot')} "

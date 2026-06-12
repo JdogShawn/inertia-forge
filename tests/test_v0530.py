@@ -31,9 +31,9 @@ class TestSizeHeuristic:
         lines, files = ra.diff_size("diff --git a/x b/x\n+added\n-removed\n")
         assert lines == 2 and files == 1
 
-    def test_vaivora_on_large(self) -> None:
-        assert ra.reviewers_for_diff("diff --git a/x b/x\n+one\n") == ["nayru", "laverna"]
-        assert "vaivora" in ra.reviewers_for_diff(self._BIG)
+    def test_cross_cutting_on_large(self) -> None:
+        assert ra.reviewers_for_diff("diff --git a/x b/x\n+one\n") == ["caliper", "sentinel"]
+        assert "lattice" in ra.reviewers_for_diff(self._BIG)
 
 
 class TestReviewDiff:
@@ -41,23 +41,23 @@ class TestReviewDiff:
         assert ra.review_diff("   ").action == "approve"
 
     def test_request_changes_on_p0(self) -> None:
-        res = ra.review_diff("diff --git a/x b/x\n+bug\n", agents=["nayru"],
+        res = ra.review_diff("diff --git a/x b/x\n+bug\n", agents=["caliper"],
                              dispatcher=lambda n, p: "### P0 null deref")
-        assert res.action == "request_changes" and res.findings[0][0] == "nayru"
+        assert res.action == "request_changes" and res.findings[0][0] == "caliper"
 
     def test_data_fence_wraps_diff(self) -> None:
         seen = {}
-        ra.review_diff("diff --git a/x b/x\n+secret\n", agents=["laverna"],
+        ra.review_diff("diff --git a/x b/x\n+secret\n", agents=["sentinel"],
                        dispatcher=lambda n, p: seen.setdefault("p", p) or "### P2 ok")
         assert "DATA START" in seen["p"] and "DATA END" in seen["p"] and "+secret" in seen["p"]
 
     def test_all_agents_fail_is_error(self) -> None:
-        res = ra.review_diff("diff --git a/x b/x\n+x\n", agents=["nayru", "laverna"],
+        res = ra.review_diff("diff --git a/x b/x\n+x\n", agents=["caliper", "sentinel"],
                              dispatcher=lambda n, p: None)
         assert res.action == "error" and res.errors == 2 and not res.findings
 
     def test_multi_agent_combines(self) -> None:
-        res = ra.review_diff("diff --git a/x b/x\n+x\n", agents=["nayru", "laverna"],
+        res = ra.review_diff("diff --git a/x b/x\n+x\n", agents=["caliper", "sentinel"],
                              dispatcher=lambda n, p: "### P2 minor")
         assert res.action == "comment" and len(res.findings) == 2
 
@@ -73,5 +73,5 @@ class TestCli:
         monkeypatch.setattr(ra, "_diff_for", lambda *a, **k: "diff --git a/x b/x\n+bug\n")
         monkeypatch.setattr(ra, "review_diff",
                             lambda *a, **k: ra.ReviewResult(action="request_changes",
-                                                            findings=[("nayru", "### P0 bad")]))
+                                                            findings=[("caliper", "### P0 bad")]))
         assert main(["review-agent", "diff"]) == 1

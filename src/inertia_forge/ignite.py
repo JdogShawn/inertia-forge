@@ -77,6 +77,16 @@ def _suggest_agent(plan: dict, first: dict) -> str:
 
 
 def run_ignite(argv: list[str]) -> int:
+    # Subcommands run the autonomous pipeline; a bare path ingests a backlog.
+    if argv and argv[0] == "run":
+        from inertia_forge.ignite_run import run_pipeline
+        return run_pipeline(argv[1:])
+    if argv and argv[0] in ("resume", "runs"):
+        from inertia_forge.engage_cli import run_engage
+        return run_engage(argv)
+    if argv and argv[0] == "plan":
+        from inertia_forge.ignite_plan import run_plan_cli
+        return run_plan_cli(argv[1:])
     parser = argparse.ArgumentParser(prog="inertia-forge ignite")
     parser.add_argument("backlog", help="path to a backlog .md file")
     parser.add_argument("--check", action="store_true",

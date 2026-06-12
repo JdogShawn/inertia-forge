@@ -35,8 +35,8 @@ class _Resp:
 
 class TestLoad:
     def test_load_def(self, proj: Path) -> None:
-        _agent(proj, "nayru", fm="model: opus\npermissionMode: plan\ntools: Read, Grep\n")
-        d = invoker.load_agent_def("nayru")
+        _agent(proj, "caliper", fm="model: opus\npermissionMode: plan\ntools: Read, Grep\n")
+        d = invoker.load_agent_def("caliper")
         assert d["model"] == "opus" and d["permission_mode"] == "plan"
         assert d["tools"] == ["Read", "Grep"] and "reviewer" in d["system_prompt"]
 
@@ -86,8 +86,8 @@ class TestDispatch:
                 captured["prompt"] = prompt
                 return _Resp()
         monkeypatch.setattr("inertia_forge.agent.AgentSession", _Sess)
-        invoker.dispatch_with_handoff("fixer", "fix it", "nayru", "found a bug")
-        assert "Handoff from nayru" in captured["prompt"] and "found a bug" in captured["prompt"]
+        invoker.dispatch_with_handoff("fixer", "fix it", "caliper", "found a bug")
+        assert "Handoff from caliper" in captured["prompt"] and "found a bug" in captured["prompt"]
 
 
 class TestCli:

@@ -1,17 +1,16 @@
 """Agent-backed code review — the forge's review intelligence.
 
-Dispatches one or more named reviewers over a diff, each with a focused prompt,
-then classifies the combined findings deterministically into a verdict
-(request_changes / comment / approve) by P0/P1/P2 severity. The reviewers:
+Dispatches the forge's own review agents over a diff and classifies the combined
+findings deterministically into a verdict (request_changes / comment / approve)
+by P0/P1/P2 severity. Each agent brings its own role (from its bundled `.md`):
 
-  nayru    — quality, correctness, best practices
-  laverna  — security: vulnerabilities, credential exposure, OWASP
-  vaivora  — cross-module / integration / architecture (added for large diffs)
+  caliper  — code-review specialist: correctness, quality, plan adherence
+  sentinel — security & compliance auditor: vulnerabilities, secrets, deps
+  lattice  — cross-cutting / integration specialist (added for large diffs)
 
-The diff is fenced as UNTRUSTED DATA in every prompt (prompt-injection guard).
-The agent calls are the only LLM touchpoint — they run read-only (`plan` mode,
-Read/Glob/Grep). The size heuristic, severity classification, and verdict are
-pure deterministic logic, testable with no model via an injected dispatcher.
+The diff is fenced as UNTRUSTED DATA (prompt-injection guard); each agent runs
+read-only. The size heuristic, severity classification, and verdict are pure
+deterministic logic, testable with no model via an injected dispatcher.
 """
 from __future__ import annotations
 
@@ -30,17 +29,14 @@ _DATA_FENCE = (
 )
 _DATA_END = "\n--- DATA END ---"
 
-REVIEWER_PROMPTS: dict[str, str] = {
-    "nayru": ("Review the following diff for quality, correctness, and best "
-              "practices. Classify each finding as P0, P1, or P2 using markdown "
-              "headers like ### P0."),
-    "laverna": ("Audit the following diff for security vulnerabilities, credential "
-                "exposure, and OWASP issues. Classify each finding as P0, P1, or "
-                "P2 using markdown headers like ### P0."),
-    "vaivora": ("Review the following large diff for cross-module interactions, "
-                "integration issues, and architectural concerns. Classify each "
-                "finding as P0, P1, or P2 using markdown headers like ### P0."),
-}
+# The forge's bundled review agents (resolved via the invoker → their .md).
+BASE_REVIEWERS = ("caliper", "sentinel")
+_LARGE_DIFF_REVIEWER = "lattice"
+_REVIEW_INSTRUCTION = (
+    "Review the following code diff in your specialty. List each finding and "
+    "classify its severity with a markdown header — ### P0 (critical), "
+    "### P1 (important), or ### P2 (minor)."
+)
 
 
 def has_blocking_findings(text: str) -> bool:
@@ -65,12 +61,12 @@ def diff_size(diff: str) -> tuple[int, int]:
     return lines, files
 
 
-def reviewers_for_diff(diff: str, base: tuple[str, ...] = ("nayru", "laverna")) -> list[str]:
-    """Base reviewers, plus vaivora when the diff is large (cross-module risk)."""
+def reviewers_for_diff(diff: str, base: tuple[str, ...] = BASE_REVIEWERS) -> list[str]:
+    """Base reviewers, plus the cross-cutting agent when the diff is large."""
     lines, files = diff_size(diff)
     agents = list(base)
     if lines > _LARGE_DIFF_LINES or files > _LARGE_DIFF_FILES:
-        agents.append("vaivora")
+        agents.append(_LARGE_DIFF_REVIEWER)
     return agents
 
 
@@ -87,11 +83,10 @@ class ReviewResult:
 
 
 def _default_dispatcher(cli: str, model: str | None, root: Path):
-    def dispatch(_name: str, prompt: str) -> str | None:
-        from inertia_forge.agent import AgentSession
-        session = AgentSession(agent=cli, model=model, allowed_tools=["Read", "Glob", "Grep"],
-                               permission_mode="plan", working_dir=root)
-        resp = session.invoke(prompt)
+    """Dispatch a named forge agent via the invoker (uses the agent's own .md)."""
+    def dispatch(name: str, context: str) -> str | None:
+        from inertia_forge.invoker import dispatch as invoke_agent
+        resp = invoke_agent(name, context, cli=cli, working_dir=root)
         return None if resp.is_error else resp.result
     return dispatch
 
@@ -99,9 +94,9 @@ def _default_dispatcher(cli: str, model: str | None, root: Path):
 def review_diff(diff: str, agents: list[str] | None = None, cli: str = "claude",
                 model: str | None = None, root: Path | None = None,
                 dispatcher=None) -> ReviewResult:
-    """Dispatch reviewers over *diff*; return the classified verdict + findings.
+    """Dispatch the forge's review agents over *diff*; return verdict + findings.
 
-    *dispatcher* (name, prompt) -> text|None is injectable for tests / zero-LLM.
+    *dispatcher* (name, context) -> text|None is injectable for tests / zero-LLM.
     """
     if not diff.strip():
         return ReviewResult(action="approve", agents=[])
@@ -109,9 +104,9 @@ def review_diff(diff: str, agents: list[str] | None = None, cli: str = "claude",
     dispatch = dispatcher or _default_dispatcher(cli, model, root or Path("."))
     findings: list[tuple[str, str]] = []
     errors = 0
+    context = _REVIEW_INSTRUCTION + _DATA_FENCE + diff + _DATA_END
     for name in agents:
-        prompt = REVIEWER_PROMPTS.get(name, REVIEWER_PROMPTS["nayru"]) + _DATA_FENCE + diff + _DATA_END
-        text = dispatch(name, prompt)
+        text = dispatch(name, context)
         if text is None:
             errors += 1
         else:
@@ -146,7 +141,7 @@ def run_review_agent(argv: list[str]) -> int:
     p.add_argument("--agent", default="claude", help="coding-agent CLI binary")
     p.add_argument("--model", default=None)
     p.add_argument("--agents", nargs="*", default=None,
-                   help="reviewers to run (default: nayru laverna, +vaivora if large)")
+                   help="reviewers to run (default: caliper sentinel, +lattice if large)")
     p.add_argument("--json", action="store_true")
     args = p.parse_args(argv)
     diff = _diff_for(args.scope, args.ref, args.base, Path("."))

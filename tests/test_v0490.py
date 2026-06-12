@@ -147,11 +147,11 @@ class TestRunner:
 class TestCli:
     def test_dry_run(self, proj: Path) -> None:
         _task("T1.1")
-        assert main(["engage", "--dry-run"]) == 0
+        assert main(["ignite", "run", "--dry-run"]) == 0
         assert tasks.get_task("T1.1")["status"] == "done"
 
     def test_runs_empty(self, proj: Path) -> None:
-        assert main(["engage", "runs"]) == 0
+        assert main(["ignite", "runs"]) == 0
 
     def test_resume_missing_run(self, proj: Path) -> None:
-        assert main(["engage", "resume", "nope"]) == 1
+        assert main(["ignite", "resume", "nope"]) == 1

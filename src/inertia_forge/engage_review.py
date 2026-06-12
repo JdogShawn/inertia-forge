@@ -44,7 +44,7 @@ def review_and_fix(task: dict, config, max_iterations: int = 3) -> ReviewOutcome
     from inertia_forge.review_agents import review_diff
     findings = ""
     for i in range(1, max_iterations + 1):
-        result = review_diff(_task_diff(config.project_root), agents=["nayru"],
+        result = review_diff(_task_diff(config.project_root), agents=["caliper"],
                              cli=config.agent, model=config.model,
                              root=config.project_root)
         if result.action != "request_changes":

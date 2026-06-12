@@ -38,14 +38,15 @@ def build_task_prompt(task: dict, test_instruction: str = "") -> str:
 
 
 def agent_task_runner(task: dict, config) -> bool:
-    """Dispatch one task to an agent CLI; True on a non-error response."""
-    from inertia_forge.agent import AgentSession
-    session = AgentSession(
-        agent=config.agent, model=config.model,
-        allowed_tools=DRIVER_TOOLS, permission_mode=config.permission_mode,
-        working_dir=config.project_root, token_budget=config.token_budget,
-    )
-    resp = session.invoke(build_task_prompt(task, config.test_instruction))
+    """Dispatch one task to the forge's implementation agent (Piston).
+
+    Piston is the read-write TDD driver from the bundled roster; its own `.md`
+    system prompt drives the work. LLM-agnostic — runs on any CLI/model.
+    """
+    from inertia_forge.invoker import dispatch
+    resp = dispatch("piston", build_task_prompt(task, config.test_instruction),
+                    cli=config.agent, model=config.model,
+                    working_dir=config.project_root, token_budget=config.token_budget)
     return not resp.is_error
 
 

@@ -2,12 +2,13 @@
 
 The deterministic core is zero-LLM and never calls a model. This module is the
 ONE explicit, opt-in exception: a headless client for an installed coding agent.
-Claude Code is the reference (`claude -p <prompt> --output-format json`); Codex
-is supported (`codex exec`). It runs a prompt, parses the structured result,
-accumulates cost/tokens across a session, can continue a session, and can be
-capped by a token budget. Each call is recorded to telemetry. Requires the
-agent's CLI on PATH — absent, every call fails cleanly. Nothing in the
-deterministic core imports this.
+It is **LLM-agnostic** — the invocation is defined by a provider adapter (see
+:mod:`providers`), so the same session runs on any configured LLM CLI (Claude,
+Codex, Gemini, Cursor, Ollama, …), not a single vendor. It runs a prompt, parses
+the structured result, accumulates cost/tokens across a session, can continue a
+session, and can be capped by a token budget. Each call is recorded to telemetry.
+Requires the chosen CLI on PATH — absent, every call fails cleanly. Nothing in
+the deterministic core imports this.
 """
 from __future__ import annotations
 
@@ -49,21 +50,15 @@ class AgentResponse:
                 "duration_seconds": self.duration_seconds}
 
 
-def _parse(stdout: str, stderr: str, returncode: int) -> AgentResponse:
+def _parse(stdout: str, stderr: str, returncode: int, provider: str = "claude") -> AgentResponse:
     if returncode != 0:
         return AgentResponse(is_error=True, error=stderr.strip() or f"exit {returncode}", raw_output=stdout)
-    try:
-        data = json.loads(stdout)
-    except json.JSONDecodeError:
-        return AgentResponse(result=stdout, raw_output=stdout)  # plain-text agent output
-    usage = data.get("usage", {})
+    from inertia_forge import providers
+    d = providers.parse(provider, stdout)
     return AgentResponse(
-        result=data.get("result", ""), session_id=data.get("session_id"),
-        cost_usd=float(data.get("total_cost_usd", 0.0)),
-        input_tokens=int(usage.get("input_tokens", 0)), output_tokens=int(usage.get("output_tokens", 0)),
-        is_error=bool(data.get("is_error", False)),
-        error=data.get("error") if data.get("is_error") else None,
-        model=next(iter(data.get("modelUsage", {})), "unknown"), raw_output=stdout)
+        result=d["result"], session_id=d["session_id"], cost_usd=d["cost_usd"],
+        input_tokens=d["input_tokens"], output_tokens=d["output_tokens"],
+        is_error=d["is_error"], error=d["error"], model=d["model"], raw_output=stdout)
 
 
 def _record(agent: str, resp: AgentResponse) -> None:
@@ -104,18 +99,10 @@ class AgentSession:
     def _build_command(self, prompt: str, cont: bool) -> list[str]:
         if len(prompt) > _MAX_PROMPT:
             prompt = prompt[:_MAX_PROMPT] + "\n\n[TRUNCATED — prompt exceeded maximum length]"
-        if self.agent == "codex":
-            return ["codex", "exec", prompt]
-        cmd = ["claude", "-p", prompt, "--output-format", "json"]
-        if self.model:
-            cmd += ["--model", self.model]
-        if self.allowed_tools:
-            cmd += ["--allowedTools", ",".join(self.allowed_tools)]
-        elif self.permission_mode != "auto":
-            cmd += ["--permission-mode", self.permission_mode]
-        if cont and self.session_id:
-            cmd += ["--continue", self.session_id]
-        return cmd
+        from inertia_forge import providers
+        return providers.build_command(
+            self.agent, prompt, model=self.model, tools=self.allowed_tools,
+            permission_mode=self.permission_mode, session_id=self.session_id, cont=cont)
 
     def _execute(self, prompt: str, cont: bool) -> AgentResponse:
         start = time.time()
@@ -133,7 +120,7 @@ class AgentSession:
             return AgentResponse(is_error=True, error=f"'{self.agent}' CLI not found on PATH — is it installed?")
         except OSError as e:
             return AgentResponse(is_error=True, error=str(e))
-        resp = _parse(r.stdout, r.stderr, r.returncode)
+        resp = _parse(r.stdout, r.stderr, r.returncode, self.agent)
         resp.duration_seconds = round(time.time() - start, 2)
         if resp.session_id:
             self.session_id = resp.session_id
@@ -149,7 +136,8 @@ def run_invoke(argv: list[str]) -> int:
     from inertia_forge.glyphs import seal
     p = argparse.ArgumentParser(prog="inertia-forge invoke")
     p.add_argument("prompt")
-    p.add_argument("--agent", default="claude", choices=("claude", "codex"))
+    p.add_argument("--agent", default="claude",
+                   help="provider name (see `inertia-forge providers list`)")
     p.add_argument("--model", default=None)
     p.add_argument("--allow-tools", nargs="*", default=None)
     p.add_argument("--driver", action="store_true", help="use the driver tool preset")

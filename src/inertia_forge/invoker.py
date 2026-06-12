@@ -12,10 +12,31 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def _parse_md(path: Path, name: str) -> dict | None:
+    """Parse an agent .md (YAML-ish frontmatter + body) at an explicit path."""
+    import re
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8")
+    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.DOTALL)
+    d = {"name": name, "tools": "", "body": text.strip()}
+    if m:
+        d["body"] = m.group(2).strip()
+        for line in m.group(1).splitlines():
+            if ":" in line:
+                k, v = line.split(":", 1)
+                d[k.strip()] = v.strip()
+    return d
+
+
 def load_agent_def(name: str) -> dict | None:
-    """An agent's definition (name/description/model/permission/tools/body), or None."""
+    """An agent's definition, resolved from the project's `.claude/agents/` first,
+    then the forge's bundled roster (so its own agents work without `init`)."""
     from inertia_forge.subagent import parse
     d = parse(name)
+    if d is None:
+        from inertia_forge.assets import AGENTS as BUNDLED
+        d = _parse_md(BUNDLED / f"{name}.md", name)
     if d is None:
         return None
     tools = d.get("tools", "") or ""
@@ -45,15 +66,19 @@ def handoff_prefix(from_agent: str, handoff_context: str) -> str:
 
 
 def dispatch(name: str, context: str, *, prefix: str = "", suffix: str = "",
-             cli: str = "claude", working_dir: Path | None = None,
-             token_budget: int | None = None):
-    """Load agent *name* and invoke it with *context*. Returns an AgentResponse."""
+             cli: str = "claude", model: str | None = None,
+             working_dir: Path | None = None, token_budget: int | None = None):
+    """Load agent *name* and invoke it with *context*. Returns an AgentResponse.
+
+    *model* overrides the agent's own model so any bundled agent can run on any
+    model/CLI — the forge is LLM-agnostic.
+    """
     from inertia_forge.agent import AgentResponse, AgentSession
     agent = load_agent_def(name)
     if agent is None:
         return AgentResponse(result="", is_error=True, error=f"no such agent: {name}")
     session = AgentSession(
-        agent=cli, model=agent["model"], allowed_tools=agent["tools"] or None,
+        agent=cli, model=model or agent["model"], allowed_tools=agent["tools"] or None,
         permission_mode=agent["permission_mode"],
         working_dir=working_dir, token_budget=token_budget,
     )
