@@ -74,6 +74,7 @@ _DISPATCH = {
     "feedback": ("inertia_forge.feedback", "run_feedback"),
     "wizard": ("inertia_forge.wizard", "run_wizard"),
     "install-hook": ("inertia_forge.commands", "run_install_hook"),
+    "audit": ("inertia_forge.audit", "run_audit"),
 }
 
 
@@ -90,6 +91,9 @@ def _run_skills(argv: list[str]) -> int:
     if len(argv) > 1 and argv[1] == "score":
         from inertia_forge.skill_authoring import run_skill_score
         return run_skill_score(argv[2:])
+    if len(argv) > 1 and argv[1] == "search":
+        from inertia_forge.recommend import run_search
+        return run_search(argv[2:])
     return _list_skills()
 
 
