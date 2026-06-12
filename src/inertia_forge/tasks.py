@@ -141,9 +141,9 @@ def complete_task(task_id: str) -> dict:
 def update_task(
     task_id: str, title: str | None = None,
     complexity: float | None = None, verification: str | None = None,
-    depends_on: list[str] | None = None,
+    depends_on: list[str] | None = None, scope: list[str] | None = None,
 ) -> dict:
-    """Edit a task in place (title / complexity / verification / depends_on)."""
+    """Edit a task in place (title / complexity / verification / depends_on / scope)."""
     data = load()
     task = _require(data, task_id)
     if title is not None:
@@ -154,6 +154,8 @@ def update_task(
         task["verification"] = verification
     if depends_on is not None:
         task["depends_on"] = list(depends_on)
+    if scope is not None:
+        task["scope"] = list(scope)
     save(data)
     return task
 
