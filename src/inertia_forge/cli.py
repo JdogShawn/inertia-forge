@@ -98,6 +98,7 @@ _DISPATCH = {
     "review": ("inertia_forge.review", "run_review"),
     "diff": ("inertia_forge.diffstat", "run_diff"),
     "vet": ("inertia_forge.vet", "run_vet"),
+    "complexity": ("inertia_forge.complexity", "run_complexity"),
 }
 
 
