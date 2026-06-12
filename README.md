@@ -82,6 +82,7 @@ inertia-forge status
 | `inertia-forge complexity [path] [--max N] [--top N]` | cyclomatic (McCabe) complexity per function — the branch-count metric arch's line check misses; exits 1 over `--max` |
 | `inertia-forge suggest-split <file> [--threshold N]` | module-split adviser — for a file over N lines (default 300), recommends extracting its **classes** and cohesive **function groups** into sibling modules, largest first (advisory) |
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |
+| `inertia-forge mermaid tasks / imports [path]` | export the deterministic graphs as **Mermaid** diagrams — task dependency DAG (done/ready shaded) or the module import graph; renders in any Mermaid viewer or for an LLM |
 | `inertia-forge xref [path]` | cross-reference integrity — `from pkg.mod import X` where X isn't defined/imported/exported in `mod` (a **dangling import**, or **orphaned test** if from a test file). Catches broken refs from a refactor statically; exits 1 |
 | `inertia-forge docs [path] [--min PCT] [--list]` | docstring coverage of the public surface (funcs/classes/methods) — the documentation analog of test coverage; gates on `--min` |
 | `inertia-forge types [path] [--min PCT] [--list]` | type-hint coverage — fraction of public functions with all params (self excluded) and return annotated; gates on `--min` |
