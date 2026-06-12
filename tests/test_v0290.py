@@ -28,18 +28,18 @@ class TestQCRunner:
                 {"file_contains": {"path": "a.txt", "text": "world"}}]},
             {"name": "missing", "steps": [{"file_exists": "nope.txt"}]}]}
         results = qc.run_suite(suite)
-        assert results[0][1] is True
-        assert results[1][1] is False and results[1][2]
+        assert results[0][1] == "passed"
+        assert results[1][1] == "failed" and results[1][2]
 
     def test_run_step_exit_ok(self, proj: Path) -> None:
         suite = {"scenarios": [{"name": "s", "steps": [{"run": "skills", "expect_exit": 0}]}]}
-        assert qc.run_suite(suite)[0][1] is True
+        assert qc.run_suite(suite)[0][1] == "passed"
 
     def test_run_step_expect_contains_fail(self, proj: Path) -> None:
         suite = {"scenarios": [{"name": "s",
                  "steps": [{"run": "skills", "expect_contains": "ZZZ_NOT_THERE"}]}]}
-        name, ok, failures = qc.run_suite(suite)[0]
-        assert ok is False and "missing" in failures[0]
+        name, verdict, failures = qc.run_suite(suite)[0]
+        assert verdict == "failed" and "missing" in failures[0]
 
     def test_cli_pass_fail_missing(self, proj: Path) -> None:
         good = proj / "g.qc.yaml"

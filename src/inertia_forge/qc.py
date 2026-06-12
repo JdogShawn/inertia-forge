@@ -20,9 +20,21 @@ the project's CLI and filesystem and assert on the result:
           - file_exists: README.md
           - file_contains: { path: pyproject.toml, text: inertia-forge }
 
-`qc <suite.yaml>` runs them all and reports pass/fail per scenario, exiting 1 on
-any failure. Deterministic — every step is a forge command or a file check; no
-model, no browser.
+A suite carries a name, optional description, suite-level ``tags`` and
+``preconditions`` (steps that must pass or the whole suite is skipped), and
+tagged scenarios. ``${VAR}`` is interpolated from the environment. Steps: ``run``
+(+ expect_exit/expect_contains/expect_not_contains), ``file_exists``,
+``file_contains``. Each scenario gets a verdict — passed / failed / skipped.
+
+Subcommands::
+
+    qc <suite>          run (default); --tags / --skip-tags filter scenarios
+    qc validate <s>     schema check only, no execution
+    qc list [dir]       discover *.qc.yaml suites (--tags to filter)
+    qc init             scaffold .forge/qc/ with an example suite
+
+Exits 1 on any failed scenario. Deterministic — every step is a forge command or
+a file check; no model, no browser.
 """
 from __future__ import annotations
 
@@ -33,6 +45,8 @@ import shlex
 from pathlib import Path
 
 import yaml
+
+from inertia_forge import qc_suite
 
 
 def _run_command_step(step: dict) -> tuple[bool, str]:
@@ -71,47 +85,141 @@ def _run_step(step: dict) -> tuple[bool, str]:
     return False, f"unknown step: {sorted(step)}"
 
 
-def run_suite(suite: dict) -> list[tuple[str, bool, list[str]]]:
-    """[(scenario_name, passed, [failure_details])] for every scenario."""
+def check_preconditions(suite: dict) -> list[str]:
+    """Failure details for any suite-level precondition step (empty = all pass)."""
+    fails = []
+    for step in suite.get("preconditions", []):
+        ok, detail = _run_step(step)
+        if not ok:
+            fails.append(detail)
+    return fails
+
+
+def run_suite(suite: dict, only_tags: list[str] | None = None,
+              skip_tags: list[str] | None = None) -> list[tuple[str, str, list[str]]]:
+    """[(scenario_name, verdict, failures)]; verdict ∈ passed / failed / skipped."""
     results = []
     for sc in suite.get("scenarios", []):
+        name = sc.get("name", "(unnamed)")
+        sc_tags = set(sc.get("tags", []))
+        if (skip_tags and sc_tags & set(skip_tags)) or (only_tags and not sc_tags & set(only_tags)):
+            results.append((name, "skipped", []))
+            continue
         failures = []
         for step in sc.get("steps", []):
             ok, detail = _run_step(step)
             if not ok:
                 failures.append(detail)
-        results.append((sc.get("name", "(unnamed)"), not failures, failures))
+        results.append((name, "passed" if not failures else "failed", failures))
     return results
 
 
-def run_qc(argv: list[str]) -> int:
+def _emit_telemetry(results: list[tuple[str, str, list[str]]], path: Path) -> None:
+    from inertia_forge import telemetry
+    ran = [r for r in results if r[1] != "skipped"]
+    passed = sum(1 for _, v, _ in ran if v == "passed")
+    if ran:
+        telemetry.record("qc", "qc_pass_rate", round(100 * passed / len(ran), 1),
+                         {"passed": passed, "total": len(ran), "suite": str(path)})
+    for name, verdict, _ in ran:  # per-scenario history → flaky detection
+        telemetry.record("qc_scenario", name, 1.0 if verdict == "passed" else 0.0, {"suite": str(path)})
+
+
+def _report(results: list[tuple[str, str, list[str]]]) -> int:
+    from inertia_forge.glyphs import seal
+    glyph = {"passed": "ok", "failed": "error", "skipped": "info"}
+    for name, verdict, failures in results:
+        print(f"{seal(glyph[verdict])} {name} ({verdict})")
+        for detail in failures:
+            print(f"    - {detail}")
+    p = sum(1 for _, v, _ in results if v == "passed")
+    f = sum(1 for _, v, _ in results if v == "failed")
+    s = sum(1 for _, v, _ in results if v == "skipped")
+    print(f"\n{p} passed, {f} failed, {s} skipped")
+    return 1 if f else 0
+
+
+def _cmd_run(argv: list[str]) -> int:
     from inertia_forge.glyphs import seal
     p = argparse.ArgumentParser(prog="inertia-forge qc")
-    p.add_argument("suite", help="path to a .qc.yaml suite")
+    p.add_argument("suite")
+    p.add_argument("--tags", nargs="*", default=None, help="run only scenarios with these tags")
+    p.add_argument("--skip-tags", nargs="*", default=None, help="skip scenarios with these tags")
     args = p.parse_args(argv)
     path = Path(args.suite)
     if not path.is_file():
         print(f"QC suite not found: {path}")
         return 1
     try:
-        suite = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        suite, unresolved = qc_suite.load(path)
     except yaml.YAMLError as e:
         print(f"invalid QC suite: {e}")
         return 1
-    results = run_suite(suite)
+    if errors := qc_suite.validate(suite):
+        for e in errors:
+            print(f"{seal('error')} {e}")
+        return 1
+    if unresolved:
+        print(f"{seal('warn')} unresolved variable(s): {', '.join(sorted(unresolved))}")
+    if pre := check_preconditions(suite):
+        print(f"{seal('warn')} precondition failed — suite skipped: {pre[0]}")
+        return 1
+    results = run_suite(suite, args.tags, args.skip_tags)
     if not results:
         print("(no scenarios)")
         return 0
-    passed = sum(1 for _, ok, _ in results if ok)
-    from inertia_forge import telemetry
-    telemetry.record("qc", "qc_pass_rate",
-                     round(100 * passed / len(results), 1),
-                     {"passed": passed, "total": len(results), "suite": str(path)})
-    for sc_name, sc_ok, _ in results:  # per-scenario history → flaky detection
-        telemetry.record("qc_scenario", sc_name, 1.0 if sc_ok else 0.0, {"suite": str(path)})
-    for name, ok, failures in results:
-        print(f"{seal('ok' if ok else 'error')} {name}")
-        for detail in failures:
-            print(f"    - {detail}")
-    print(f"\n{passed}/{len(results)} scenario(s) passed")
-    return 0 if passed == len(results) else 1
+    _emit_telemetry(results, path)
+    return _report(results)
+
+
+def _cmd_validate(argv: list[str]) -> int:
+    from inertia_forge.glyphs import seal
+    p = argparse.ArgumentParser(prog="inertia-forge qc validate")
+    p.add_argument("suite")
+    args = p.parse_args(argv)
+    path = Path(args.suite)
+    if not path.is_file():
+        print(f"QC suite not found: {path}")
+        return 1
+    try:
+        suite, _ = qc_suite.load(path)
+    except yaml.YAMLError as e:
+        print(f"{seal('error')} parse error: {e}")
+        return 1
+    errors = qc_suite.validate(suite)
+    for e in errors:
+        print(f"{seal('error')} {e}")
+    if errors:
+        return 1
+    print(f"{seal('ok')} {path.name} valid ({len(suite.get('scenarios', []))} scenario(s))")
+    return 0
+
+
+def _cmd_list(argv: list[str]) -> int:
+    p = argparse.ArgumentParser(prog="inertia-forge qc list")
+    p.add_argument("dir", nargs="?", default=".")
+    p.add_argument("--tags", nargs="*", default=None)
+    args = p.parse_args(argv)
+    suites = qc_suite.discover(Path(args.dir), args.tags)
+    if not suites:
+        print("(no .qc.yaml suites found)")
+        return 0
+    for s in suites:
+        print(f"  {s}")
+    return 0
+
+
+def run_qc(argv: list[str]) -> int:
+    from inertia_forge.glyphs import seal
+    if argv and argv[0] in ("run", "validate", "list", "init"):
+        sub, rest = argv[0], argv[1:]
+    else:
+        sub, rest = "run", argv
+    if sub == "init":
+        print(f"{seal('ok')} scaffolded {qc_suite.scaffold()}")
+        return 0
+    if sub == "validate":
+        return _cmd_validate(rest)
+    if sub == "list":
+        return _cmd_list(rest)
+    return _cmd_run(rest)
