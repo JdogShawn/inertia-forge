@@ -95,6 +95,8 @@ _DISPATCH = {
     "preflight": ("inertia_forge.preflight", "run_preflight"),
     "validate-store": ("inertia_forge.storecheck", "run_validate_store"),
     "dead-code": ("inertia_forge.deadcode", "run_dead_code"),
+    "review": ("inertia_forge.review", "run_review"),
+    "diff": ("inertia_forge.diffstat", "run_diff"),
 }
 
 
