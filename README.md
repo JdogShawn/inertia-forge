@@ -52,6 +52,7 @@ inertia-forge status
 | `inertia-forge arch <path>…` | deterministic architecture check (file size, **function length, functions/file, imports/file**, stubs, broad-except, …) — exits 1 on any P0 |
 | `inertia-forge verify [dir] [--cov PKG]` | run pytest + report pass/fail/coverage |
 | `inertia-forge check [path] [--tests DIR] [--deps]` | **project gate** — arch + secrets (+ tests + dep audit) as one pass/fail (pre-commit/CI) |
+| `inertia-forge scan [path] [--snapshot]` | **full quality battery** in one pass — arch · check · vet · imports · xref · dead-code (gating) + sweep · review (advisory); one ship/no-ship verdict. The command the Crucible agent runs instead of a dozen |
 | `inertia-forge sweep [path] [--fix]` | find (or remove) unused imports |
 | `inertia-forge scan-deps [path]` | dependency vulnerability scan (pip-audit, optional) |
 | `inertia-forge task …` | native task store: `plan`/`add [--depends-on]`/`start`/`ac`/`ac-add`/`set`/`done`/`list`/`show`/`budget [--max]`/`next`/`archive`/`restore`/`list-archived`/`cleanup`/`changelog` |

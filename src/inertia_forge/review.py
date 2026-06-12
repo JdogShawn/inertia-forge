@@ -55,8 +55,11 @@ def review_file(path: str | Path) -> list[dict]:
         text = p.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return findings
+    is_py = p.suffix == ".py"
     for i, line in enumerate(text.splitlines(), 1):
-        if m := _DEBUG_TEXT.search(line):
+        # console.log / debugger are JS-isms; on Python they're only ever in
+        # strings or docs (AST already covers real Python debug leftovers).
+        if not is_py and (m := _DEBUG_TEXT.search(line)):
             findings.append({"severity": "P1", "message": f"{p}:{i} debug leftover — {m.group(0)}"})
         if m := _MARKERS.search(line):
             findings.append({"severity": "P2", "message": f"{p}:{i} {m.group(0)} marker"})
