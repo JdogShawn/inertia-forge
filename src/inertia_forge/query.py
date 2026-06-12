@@ -22,6 +22,20 @@ def success_rate() -> tuple[float | None, dict[str, int]]:
     return round(100 * counts.get("success", 0) / len(outs), 1), dict(counts)
 
 
+def flaky() -> list[tuple[str, float, int]]:
+    """[(scenario, pass_rate, runs)] for QC scenarios seen both passing AND failing."""
+    from collections import defaultdict
+    from inertia_forge.telemetry import events
+    hist: dict[str, list[float]] = defaultdict(list)
+    for e in events(kind="qc_scenario", limit=5000):
+        if e["value"] is not None:
+            hist[e["name"]].append(e["value"])
+    out = [(name, round(100 * sum(v) / len(v), 1), len(v))
+           for name, v in hist.items() if 0.0 in v and 1.0 in v]
+    out.sort(key=lambda x: (x[1], x[0]))  # least reliable first
+    return out
+
+
 def run_query(argv: list[str]) -> int:
     from inertia_forge.glyphs import g, seal
     from inertia_forge.palette import paint
@@ -30,9 +44,19 @@ def run_query(argv: list[str]) -> int:
     for name, help_ in (("success-rate", "outcome success rate"),
                         ("outcomes", "outcome breakdown"),
                         ("estimation-accuracy", "calibration MAPE + bias"),
-                        ("qc", "latest QC pass rate")):
+                        ("qc", "latest QC pass rate"),
+                        ("flaky", "QC scenarios seen both passing and failing")):
         sub.add_parser(name, help=help_)
     args = p.parse_args(argv)
+
+    if args.sub == "flaky":
+        rows = flaky()
+        if not rows:
+            print(f"{seal('ok')} no flaky QC scenarios")
+            return 0
+        for name, rate, runs in rows:
+            print(f"  {paint(f'{rate:g}%', 'warn')}  {name} ({runs} runs)")
+        return 1
 
     if args.sub in ("success-rate", "outcomes"):
         rate, breakdown = success_rate()

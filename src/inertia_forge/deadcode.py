@@ -97,6 +97,28 @@ def find_dead(root: Path) -> list[tuple[str, Path, int]]:
             if not _kept(name) and name not in used]
 
 
+def orphan_exports(root: Path) -> list[tuple[str, str]]:
+    """[(module, name)] for __all__ entries with no matching def/class/import/var
+    in that module — a broken export (the inverse of a dead symbol)."""
+    out: list[tuple[str, str]] = []
+    for f in _py_files(root):
+        if _is_test_file(f) or (tree := _parse(f)) is None:
+            continue
+        exported: set[str] = set()
+        defined: set[str] = set()
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                defined.add(node.name)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                defined.update(a.asname or a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.Assign):
+                defined.update(t.id for t in node.targets if isinstance(t, ast.Name))
+                if any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets):
+                    exported |= _all_strings(node.value)
+        out += [(str(f), name) for name in sorted(exported - defined)]
+    return out
+
+
 def run_dead_code(argv: list[str]) -> int:
     from inertia_forge.glyphs import seal
     from inertia_forge.palette import paint
@@ -105,12 +127,16 @@ def run_dead_code(argv: list[str]) -> int:
     p.add_argument("--strict", action="store_true", help="exit 1 if any dead symbols")
     args = p.parse_args(argv)
     dead = find_dead(Path(args.path))
-    if not dead:
-        print(f"{seal('ok')} no dead symbols found")
-        return 0
+    orphans = orphan_exports(Path(args.path))
+    for module, name in orphans:
+        print(f"  {paint('[P1]', 'error')} {paint(name, 'error')} "
+              f"in __all__ but not defined/imported ({module})")
     for name, f, line in dead:
         print(f"  {paint('[P2]', 'muted')} {paint(name, 'warn')} "
               f"defined but never referenced ({f}:{line})")
-    print(f"\n{seal('warn')} {len(dead)} likely-dead symbol(s) "
-          f"{paint('(advisory — dynamic uses can hide real references)', 'muted')}")
-    return 1 if args.strict else 0
+    if not dead and not orphans:
+        print(f"{seal('ok')} no dead symbols or broken exports found")
+        return 0
+    print(f"\n{seal('error' if orphans else 'warn')} {len(orphans)} broken export(s), "
+          f"{len(dead)} likely-dead symbol(s) {paint('(dead = advisory)', 'muted')}")
+    return 1 if (orphans or args.strict) else 0

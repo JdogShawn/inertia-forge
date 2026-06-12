@@ -71,7 +71,7 @@ inertia-forge status
 | `inertia-forge json <query>` | machine-readable state for agents (`status`/`tasks`/`graph`/`plan`/`consistency`/`freshness`/`budget`) in one envelope: `{status, data, errors}` |
 | `inertia-forge preflight [--path DIR] [--tests DIR]` | composite readiness gate: clean tree + active plan + arch (0 P0) + consistency (+ tests); exits 1 on any fail |
 | `inertia-forge validate-store` | integrity-check the `.forge` JSON stores (shape, task fields, ids, statuses) |
-| `inertia-forge dead-code [path] [--strict]` | project-wide dead-symbol finder — top-level defs never referenced anywhere (defs from src, refs from src+tests); advisory P2 |
+| `inertia-forge dead-code [path] [--strict]` | dead-symbol finder (defs never referenced — advisory P2) **+ broken `__all__` exports** (an export naming a symbol that isn't defined/imported — P1, exits 1) |
 | `inertia-forge learn synthesize` | cluster captured insights by tag into themes (deterministic, no model) |
 | `inertia-forge review [path] [--since REF]` | deterministic review: debug leftovers (P1: breakpoint/pdb/console.log/debugger), TODO/FIXME/HACK markers + hardcoded endpoints (P2); git-changed by default |
 | `inertia-forge diff [--since REF]` | structured change view — per-file +/- lines and role, rolled up |
@@ -120,7 +120,7 @@ inertia-forge status
 | `inertia-forge telemetry snapshot/trend/summary/record/check/outcome` | deterministic SQLite metric store (`.forge/telemetry.db`, stdlib, offline) — capture quality numbers over time, view trajectories, record session outcomes, and `check` for regressions (a quality drop vs the previous snapshot → `signal` event + exit 1) |
 | `inertia-forge semantic add/search/list/index-learn` | **semantic memory** — chroma-style recall by meaning via a local TF-IDF cosine index (no embedding model, no server, no network; deterministic). `index-learn` pulls in the knowledge ledger |
 | `inertia-forge calibrate record/accuracy` | estimation calibration — log estimate-vs-actual pairs, report MAPE + systematic bias (over/under-estimating) |
-| `inertia-forge query success-rate/outcomes/estimation-accuracy/qc` | aggregate views over telemetry — outcome success rate, breakdown, calibration accuracy, latest QC pass rate |
+| `inertia-forge query success-rate/outcomes/estimation-accuracy/qc/flaky` | aggregate views over telemetry — outcome success rate, breakdown, calibration accuracy, latest QC pass rate, and **flaky scenarios** (seen both passing and failing) |
 | `inertia-forge mcp serve/tools` | MCP server exposing **20 tools** to any client — state, the full analysis suite, and the gated run/write/edit/view |
 | `inertia-forge banner` / `logo [--variant full/compact/tiny]` | the INERTIA atom + wordmark — the forge's branded marks |
 | `inertia-forge statusline` | Claude Code status segment: `⚛ INERTIA forge · <state>` (reads status JSON on stdin) |

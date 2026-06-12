@@ -107,6 +107,8 @@ def run_qc(argv: list[str]) -> int:
     telemetry.record("qc", "qc_pass_rate",
                      round(100 * passed / len(results), 1),
                      {"passed": passed, "total": len(results), "suite": str(path)})
+    for sc_name, sc_ok, _ in results:  # per-scenario history → flaky detection
+        telemetry.record("qc_scenario", sc_name, 1.0 if sc_ok else 0.0, {"suite": str(path)})
     for name, ok, failures in results:
         print(f"{seal('ok' if ok else 'error')} {name}")
         for detail in failures:
