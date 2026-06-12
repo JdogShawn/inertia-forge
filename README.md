@@ -77,6 +77,7 @@ inertia-forge status
 | `inertia-forge diff [--since REF]` | structured change view — per-file +/- lines and role, rolled up |
 | `inertia-forge vet [path] [--since REF]` | insecure-code scan (AST bandit-lite): eval/exec, `shell=True`, SQL-by-f-string (P1); os.system, pickle, `yaml.load`, weak hashes (P2) |
 | `inertia-forge complexity [path] [--max N] [--top N]` | cyclomatic (McCabe) complexity per function — the branch-count metric arch's line check misses; exits 1 over `--max` |
+| `inertia-forge suggest-split <file>` | module-split adviser — when a file is oversized, recommends which prefix-clustered function group to extract into a sibling module (advisory) |
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |
 | `inertia-forge docs [path] [--min PCT] [--list]` | docstring coverage of the public surface (funcs/classes/methods) — the documentation analog of test coverage; gates on `--min` |
 | `inertia-forge types [path] [--min PCT] [--list]` | type-hint coverage — fraction of public functions with all params (self excluded) and return annotated; gates on `--min` |
