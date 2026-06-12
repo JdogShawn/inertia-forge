@@ -5,6 +5,15 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.52.0
+- `handoff pack <task-id>` / `handoff unpack <pkg>` — a **portable handoff
+  package**. `pack` bundles a task (description, state, acceptance criteria), its
+  relevant files (declared scope + recently changed), agent-specific
+  instructions, and a token estimate into one `.tgz` (HANDOFF.md + metadata.json
+  + context/); `unpack` extracts it and returns the metadata. Move a task to a
+  different agent (codex, cursor, generic). Deterministic — tarball + JSON, no
+  LLM. The bare `handoff` brief is unchanged.
+
 ## 0.51.0
 - `dispatch <agent> <context>` — invoke a named agent from
   `.claude/agents/<name>.md` through the invoke bridge: load its model, tools,
