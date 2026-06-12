@@ -5,6 +5,14 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.51.0
+- `dispatch <agent> <context>` — invoke a named agent from
+  `.claude/agents/<name>.md` through the invoke bridge: load its model, tools,
+  permission mode, and system prompt, prepend that prompt to the context, and
+  run it via `AgentSession`. One agent can hand off to another with prior
+  context (`dispatch_with_handoff`). The registry CRUD stays in `subagent`;
+  this is the invocation layer. Still the one opt-in LLM bridge.
+
 ## 0.50.0
 - `engage` gains depth on each task:
   - **Targeted tests** — maps the run's changed files to their conventional test
