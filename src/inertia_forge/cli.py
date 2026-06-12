@@ -99,6 +99,7 @@ _DISPATCH = {
     "diff": ("inertia_forge.diffstat", "run_diff"),
     "vet": ("inertia_forge.vet", "run_vet"),
     "complexity": ("inertia_forge.complexity", "run_complexity"),
+    "imports": ("inertia_forge.importgraph", "run_imports"),
 }
 
 
