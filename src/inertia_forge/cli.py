@@ -104,6 +104,10 @@ _DISPATCH = {
     "types": ("inertia_forge.typehints", "run_types"),
     "changelog": ("inertia_forge.changelog", "run_changelog"),
     "coverage": ("inertia_forge.coverage", "run_coverage"),
+    "run": ("inertia_forge.tools", "run_exec"),
+    "write": ("inertia_forge.tools", "run_write"),
+    "edit": ("inertia_forge.tools", "run_edit"),
+    "view": ("inertia_forge.tools", "run_view"),
 }
 
 

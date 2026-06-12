@@ -82,6 +82,8 @@ inertia-forge status
 | `inertia-forge types [path] [--min PCT] [--list]` | type-hint coverage — fraction of public functions with all params (self excluded) and return annotated; gates on `--min` |
 | `inertia-forge changelog [--since REF] [--until REF]` | conventional-commit changelog (release notes) from git history, grouped by type with breaking changes surfaced; defaults to since-last-tag |
 | `inertia-forge coverage [file] [--min PCT] [--per-file PCT]` | gate on a Cobertura `coverage.xml` — total + optional per-file line coverage; missing report is advisory |
+| `inertia-forge run <cmd> [--allow-review]` | **gated execution** — sandbox-classify a command; blocked never runs, review refuses unless `--allow-review`, only allowed runs; audited |
+| `inertia-forge write <path> [--content]` / `edit <path> --old --new` / `view <path>` | **gated file ops** — containment-tier checked; protected/read-only paths refused; every call audited |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |
