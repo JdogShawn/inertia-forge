@@ -313,3 +313,25 @@ def run_scan_deps(argv: list[str]) -> int:
     parser.add_argument("path", nargs="?", default=".")
     args = parser.parse_args(argv)
     return _scan_deps(Path(args.path))
+
+
+def run_install_hook(argv: list[str]) -> int:
+    """inertia-forge install-hook — write a native git pre-commit hook running the gate."""
+    import stat
+
+    parser = argparse.ArgumentParser(prog="inertia-forge install-hook")
+    parser.add_argument("--cmd", default="inertia-forge check . && inertia-forge sweep .",
+                        help="command the hook runs")
+    args = parser.parse_args(argv)
+    git = Path(".git")
+    if not git.is_dir():
+        print("not a git repository")
+        return 1
+    hooks = git / "hooks"
+    hooks.mkdir(parents=True, exist_ok=True)
+    pre = hooks / "pre-commit"
+    pre.write_text(f"#!/usr/bin/env bash\n# Installed by inertia-forge — quality gate.\n{args.cmd}\n",
+                   encoding="utf-8")
+    pre.chmod(pre.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    print(f"installed git pre-commit hook -> {pre}\n  runs: {args.cmd}")
+    return 0

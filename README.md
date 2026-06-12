@@ -46,7 +46,7 @@ inertia-forge status
 
 | command | what it does |
 |---|---|
-| `inertia-forge skills` / `skills validate` / `skills export [--format json\|md]` | list / validate / export the registry |
+| `inertia-forge skills` / `validate` / `export` / `new <name>` / `score [name]` | list / validate / export / scaffold / score skills |
 | `inertia-forge doctor [--fix]` | health check of the forge setup (python, pytest, .forge, registry, hooks) |
 | `inertia-forge start <skill> <target>` | open a forge session |
 | `inertia-forge record-phase <phase> <target>` | record a phase (auto-closes on all-green) |
@@ -80,6 +80,12 @@ inertia-forge status
 | `inertia-forge subagent list/create/show/validate/rm` | manage Claude Code subagent definitions |
 | `inertia-forge template new/list` | scaffold a forge-ready project |
 | `inertia-forge migrate status/run` | versioned `.forge` schema migrations |
+| `inertia-forge gaps [src]` | deterministic gap detector — skills w/o docs, tasks w/o AC, modules w/o tests |
+| `inertia-forge release validate-versions / checklist` | version-consistency check + release readiness |
+| `inertia-forge sprint start/add/complete/list` | group tasks into named sprints |
+| `inertia-forge feedback add/list` | capture process feedback (`.forge/feedback.jsonl`) |
+| `inertia-forge install-hook` | install a native git pre-commit running the gate |
+| `inertia-forge wizard` | one-command guided onboarding (install + health + the loop) |
 | `inertia-forge mcp serve/tools` | MCP server exposing the forge's tools to any client |
 | `inertia-forge init` | install the Claude Code enforcement hooks (gate · stop · compact · containment) |
 
