@@ -102,10 +102,14 @@ def run_qc(argv: list[str]) -> int:
     if not results:
         print("(no scenarios)")
         return 0
+    passed = sum(1 for _, ok, _ in results if ok)
+    from inertia_forge import telemetry
+    telemetry.record("qc", "qc_pass_rate",
+                     round(100 * passed / len(results), 1),
+                     {"passed": passed, "total": len(results), "suite": str(path)})
     for name, ok, failures in results:
         print(f"{seal('ok' if ok else 'error')} {name}")
         for detail in failures:
             print(f"    - {detail}")
-    passed = sum(1 for _, ok, _ in results if ok)
     print(f"\n{passed}/{len(results)} scenario(s) passed")
     return 0 if passed == len(results) else 1
