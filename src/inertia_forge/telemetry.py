@@ -96,40 +96,31 @@ def snapshot_metrics(path: str) -> dict[str, float]:
     return out
 
 
-def run_telemetry(argv: list[str]) -> int:
-    from inertia_forge.glyphs import g, seal
-    from inertia_forge.palette import paint
-    p = argparse.ArgumentParser(prog="inertia-forge telemetry")
-    sub = p.add_subparsers(dest="sub", required=True)
-    snap = sub.add_parser("snapshot", help="record current quality metrics")
-    snap.add_argument("--path", default="src")
-    tr = sub.add_parser("trend", help="show a metric's trajectory"); tr.add_argument("name")
-    rec = sub.add_parser("record", help="record a custom metric")
-    rec.add_argument("name"); rec.add_argument("value", type=float)
-    rec.add_argument("--kind", default="custom")
-    sub.add_parser("summary", help="latest snapshot values")
-    args = p.parse_args(argv)
+def _cmd_snapshot(args: argparse.Namespace) -> int:
+    from inertia_forge.glyphs import seal
+    metrics = snapshot_metrics(args.path)
+    for name, value in metrics.items():
+        record("snapshot", name, value)
+    print(f"{seal('ok')} recorded {len(metrics)} metric(s): "
+          + ", ".join(f"{k}={v:g}" for k, v in metrics.items()))
+    return 0
 
-    if args.sub == "snapshot":
-        metrics = snapshot_metrics(args.path)
-        for name, value in metrics.items():
-            record("snapshot", name, value)
-        print(f"{seal('ok')} recorded {len(metrics)} metric(s): "
-              + ", ".join(f"{k}={v:g}" for k, v in metrics.items()))
+
+def _cmd_trend(args: argparse.Namespace) -> int:
+    from inertia_forge.glyphs import g
+    from inertia_forge.palette import paint
+    series = trend(args.name)
+    if not series:
+        print(f"(no data for {args.name})")
         return 0
-    if args.sub == "record":
-        record(args.kind, args.name, args.value)
-        print(f"{seal('ok')} recorded {args.name}={args.value:g}")
-        return 0
-    if args.sub == "trend":
-        series = trend(args.name)
-        if not series:
-            print(f"(no data for {args.name})")
-            return 0
-        for ts, val in series:
-            bar = paint(g("orbit") * min(int(val / 5) + 1, 20), "accent")
-            print(f"  {ts[:19]}  {paint(f'{val:7g}', 'text')}  {bar}")
-        return 0
+    for ts, val in series:
+        bar = paint(g("orbit") * min(int(val / 5) + 1, 20), "accent")
+        print(f"  {ts[:19]}  {paint(f'{val:7g}', 'text')}  {bar}")
+    return 0
+
+
+def _cmd_summary(_args: argparse.Namespace) -> int:
+    from inertia_forge.palette import paint
     snaps: dict[str, float] = {}
     for ev in events(kind="snapshot", limit=200):
         snaps.setdefault(ev["name"], ev["value"])  # most recent first
@@ -138,4 +129,38 @@ def run_telemetry(argv: list[str]) -> int:
         return 0
     for name in sorted(snaps):
         print(f"  {paint(name.ljust(20), 'muted')} {snaps[name]:g}")
+    return 0
+
+
+def run_telemetry(argv: list[str]) -> int:
+    from inertia_forge.glyphs import seal
+    p = argparse.ArgumentParser(prog="inertia-forge telemetry")
+    sub = p.add_subparsers(dest="sub", required=True)
+    snap = sub.add_parser("snapshot", help="record current quality metrics")
+    snap.add_argument("--path", default="src")
+    tr = sub.add_parser("trend", help="show a metric's trajectory"); tr.add_argument("name")
+    rec = sub.add_parser("record", help="record a custom metric")
+    rec.add_argument("name"); rec.add_argument("value", type=float); rec.add_argument("--kind", default="custom")
+    sub.add_parser("summary", help="latest snapshot values")
+    sub.add_parser("check", help="flag quality regressions vs the previous snapshot")
+    oc = sub.add_parser("outcome", help="record a session/task outcome")
+    oc.add_argument("result", choices=("success", "fail", "partial"))
+    oc.add_argument("--detail", help="user_stop / compaction / rate_limit / code_failure / timeout")
+    args = p.parse_args(argv)
+    if args.sub == "snapshot":
+        return _cmd_snapshot(args)
+    if args.sub == "trend":
+        return _cmd_trend(args)
+    if args.sub == "summary":
+        return _cmd_summary(args)
+    if args.sub == "check":
+        from inertia_forge.signals import run_check
+        return run_check([])
+    if args.sub == "outcome":
+        record("outcome", args.result, detail={"detail": args.detail} if args.detail else None)
+        print(f"{seal('ok')} recorded outcome: {args.result}"
+              + (f" ({args.detail})" if args.detail else ""))
+        return 0
+    record(args.kind, args.name, args.value)
+    print(f"{seal('ok')} recorded {args.name}={args.value:g}")
     return 0

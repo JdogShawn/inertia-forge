@@ -116,7 +116,7 @@ inertia-forge status
 | `inertia-forge wizard` | one-command guided onboarding (install + health + the loop) |
 | `inertia-forge audit <sibling-repo>` | cross-repo impact — shared contracts a sibling consumes + its health |
 | `inertia-forge qc <suite.yaml>` | declarative QC runner — scenarios of CLI/file assertions (run+expect_exit/contains, file_exists/contains); exits 1 on any failure; records the pass rate to telemetry |
-| `inertia-forge telemetry snapshot/trend/summary/record` | deterministic SQLite metric store (`.forge/telemetry.db`, stdlib, offline) — capture quality numbers (arch P0s, dead symbols, doc/type %, complexity, coverage) over time and view a metric's trajectory |
+| `inertia-forge telemetry snapshot/trend/summary/record/check/outcome` | deterministic SQLite metric store (`.forge/telemetry.db`, stdlib, offline) — capture quality numbers over time, view trajectories, record session outcomes, and `check` for regressions (a quality drop vs the previous snapshot → `signal` event + exit 1) |
 | `inertia-forge mcp serve/tools` | MCP server exposing **20 tools** to any client — state, the full analysis suite, and the gated run/write/edit/view |
 | `inertia-forge banner` / `logo [--variant full/compact/tiny]` | the INERTIA atom + wordmark — the forge's branded marks |
 | `inertia-forge statusline` | Claude Code status segment: `⚛ INERTIA forge · <state>` (reads status JSON on stdin) |
