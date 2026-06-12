@@ -78,6 +78,7 @@ inertia-forge status
 | `inertia-forge review [path] [--since REF]` | deterministic review: debug leftovers (P1: breakpoint/pdb/console.log/debugger), TODO/FIXME/HACK markers + hardcoded endpoints (P2); git-changed by default |
 | `inertia-forge diff [--since REF]` | structured change view — per-file +/- lines and role, rolled up |
 | `inertia-forge vet [path] [--since REF]` | insecure-code scan (AST bandit-lite): eval/exec, `shell=True`, SQL-by-f-string (P1); os.system, pickle, `yaml.load`, weak hashes (P2) |
+| `inertia-forge policy [path]` | configurable **banned-call** lint — list calls to forbid in `.forge/banned.txt` (e.g. `subprocess.run # use wrapper`); AST-flags each site, `# noqa: policy` to allow. Opt-in architectural policy beyond vet's fixed rules |
 | `inertia-forge complexity [path] [--max N] [--top N]` | cyclomatic (McCabe) complexity per function — the branch-count metric arch's line check misses; exits 1 over `--max` |
 | `inertia-forge suggest-split <file> [--threshold N]` | module-split adviser — for a file over N lines (default 300), recommends extracting its **classes** and cohesive **function groups** into sibling modules, largest first (advisory) |
 | `inertia-forge imports [path]` | module import graph + circular-import detection — hard (import-time) cycles are P1; soft (lazy, in-function) cycles are advisory |

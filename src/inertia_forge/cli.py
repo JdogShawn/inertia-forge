@@ -117,6 +117,7 @@ _DISPATCH = {
     "query": ("inertia_forge.query", "run_query"),
     "xref": ("inertia_forge.xref", "run_xref"),
     "scan": ("inertia_forge.scan", "run_scan"),
+    "policy": ("inertia_forge.policy", "run_policy"),
 }
 
 
