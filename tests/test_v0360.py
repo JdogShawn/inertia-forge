@@ -1,5 +1,5 @@
 """v0.36.0 — cross-reference integrity (xref): dangling imports + orphaned tests.
-Modelled on paircoder's sweep classifier (orphaned_test / dangling categories).
+Classifies broken refs as orphaned_test (from a test file) or dangling_import.
 """
 from __future__ import annotations
 
