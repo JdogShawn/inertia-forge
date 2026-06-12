@@ -5,6 +5,10 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.45.0
+- `report` — one markdown health page unifying the scan battery, code-quality
+  metrics, and task progress (CI artifact / LLM-friendly).
+
 ## 0.44.0
 - `release checklist` is now a real readiness gate (versions · clean tree ·
   CHANGELOG entry · tests collectable · doc freshness), not a static list.

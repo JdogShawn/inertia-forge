@@ -119,6 +119,7 @@ _DISPATCH = {
     "scan": ("inertia_forge.scan", "run_scan"),
     "policy": ("inertia_forge.policy", "run_policy"),
     "mermaid": ("inertia_forge.mermaid", "run_mermaid"),
+    "report": ("inertia_forge.report", "run_report"),
 }
 
 
