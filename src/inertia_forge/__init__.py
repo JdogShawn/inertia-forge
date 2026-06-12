@@ -38,7 +38,7 @@ from inertia_forge.skill_registry import (
     validate_skill_name,
 )
 
-__version__ = "0.52.0"
+__version__ = "0.53.0"
 
 
 __all__ = [

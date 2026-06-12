@@ -5,6 +5,19 @@ tags; regenerate the recent section any time with `inertia-forge changelog`.
 
 The forge follows semantic-ish minor versions — each `0.N.0` adds a capability.
 
+## 0.53.0
+- `review-agent [diff|branch|commit]` — **agent-backed code review** (the forge's
+  review intelligence). Dispatches focused reviewers over a diff — `nayru`
+  (quality/correctness), `laverna` (security/OWASP), and `vaivora` (cross-module,
+  added automatically for large diffs) — then classifies the combined findings
+  into a verdict (request_changes / comment / approve) by P0/P1/P2 severity.
+  The diff is fenced as untrusted data (prompt-injection guard); reviewers run
+  read-only. The severity classification and size heuristic are pure
+  deterministic logic (testable with no model via an injected dispatcher).
+- `engage --review` now delegates its review judgment to this one review
+  intelligence (diff-based, P0/P1/P2) instead of a separate verdict check — a
+  single source of truth for "what a review is".
+
 ## 0.52.0
 - `handoff pack <task-id>` / `handoff unpack <pkg>` — a **portable handoff
   package**. `pack` bundles a task (description, state, acceptance criteria), its

@@ -97,6 +97,7 @@ _DISPATCH = {
     "validate-store": ("inertia_forge.storecheck", "run_validate_store"),
     "dead-code": ("inertia_forge.deadcode", "run_dead_code"),
     "review": ("inertia_forge.review", "run_review"),
+    "review-agent": ("inertia_forge.review_agents", "run_review_agent"),
     "diff": ("inertia_forge.diffstat", "run_diff"),
     "vet": ("inertia_forge.vet", "run_vet"),
     "complexity": ("inertia_forge.complexity", "run_complexity"),

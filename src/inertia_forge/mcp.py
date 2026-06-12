@@ -91,12 +91,48 @@ _TOOLS = [
      lambda a: ["edit", a.get("path", ""), "--old", a.get("old", ""), "--new", a.get("new", "")]),
     ("forge_view", "GATED read — blocked paths refused", _path_schema("file path"),
      lambda a: ["view", _p(a)]),
+    # ── agent / LLM bridge (opt-in: these may invoke a coding agent) ──
+    ("forge_invoke", "OPT-IN LLM bridge — run one prompt via a coding-agent CLI",
+     _props(prompt="the prompt to send"), lambda a: ["invoke", a.get("prompt", "")]),
+    ("forge_dispatch", "OPT-IN — invoke a named agent (.claude/agents/<name>.md) with context",
+     _props(agent="agent name", context="task context"),
+     lambda a: ["dispatch", a.get("agent", ""), a.get("context", "")]),
+    ("forge_models", "Recommend a model tier for a token/complexity estimate (no call)",
+     _props(tokens="estimated tokens"), lambda a: ["models", "recommend", "--tokens", a.get("tokens", "0")]),
 ]
+
+# Commands already given rich, curated schemas above — everything else in the
+# CLI dispatch table is auto-exposed with a generic string-args schema so the
+# WHOLE forge is reachable by an agent, not just the curated subset.
+_CURATED_CMDS = {"status", "json", "task", "skills", "doctor", "arch", "check",
+                 "sweep", "review", "vet", "complexity", "imports", "dead-code",
+                 "docs", "types", "qc", "xref", "scan", "consistency", "preflight",
+                 "coverage", "query", "semantic", "suggest-split", "run", "write",
+                 "edit", "view", "invoke", "dispatch", "models"}
+_GENERIC_SCHEMA = {"type": "object", "properties": {
+    "args": {"type": "array", "items": _STR, "description": "command arguments"}}}
+
+
+def _auto_tools() -> list[tuple]:
+    """Generic MCP tool per uncurated CLI command — the rest of the forge."""
+    from inertia_forge.cli import _DISPATCH
+    out = []
+    for cmd in sorted(_DISPATCH):
+        if cmd in _CURATED_CMDS:
+            continue
+        out.append((f"forge_{cmd.replace('-', '_')}",
+                    f"forge {cmd} (deterministic)", _GENERIC_SCHEMA,
+                    lambda a, c=cmd: [c, *a.get("args", [])]))
+    return out
+
+
+def _all_tools() -> list[tuple]:
+    return _TOOLS + _auto_tools()
 
 
 def _run_tool(name: str, arguments: dict) -> str:
     from inertia_forge.cli import main
-    spec = next((t for t in _TOOLS if t[0] == name), None)
+    spec = next((t for t in _all_tools() if t[0] == name), None)
     if spec is None:
         return f"unknown tool: {name}"
     buf = io.StringIO()
@@ -120,7 +156,7 @@ def handle(req: dict) -> dict | None:
                              "serverInfo": {"name": "inertia-forge", "version": __version__}})
     if method == "tools/list":
         return _result(rid, {"tools": [{"name": n, "description": d, "inputSchema": s}
-                                       for n, d, s, _ in _TOOLS]})
+                                       for n, d, s, _ in _all_tools()]})
     if method == "tools/call":
         params = req.get("params", {})
         text = _run_tool(params.get("name", ""), params.get("arguments") or {})
@@ -156,7 +192,7 @@ def run_mcp(argv: list[str]) -> int:
     sub.add_parser("tools", help="list exposed MCP tools")
     args = p.parse_args(argv)
     if args.sub == "tools":
-        for n, d, _s, _b in _TOOLS:
-            print(f"  {n:16} {d}")
+        for n, d, _s, _b in _all_tools():
+            print(f"  {n:24} {d}")
         return 0
     return serve()

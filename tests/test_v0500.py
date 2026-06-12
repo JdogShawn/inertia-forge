@@ -10,7 +10,7 @@ import pytest
 from inertia_forge import tasks
 from inertia_forge.engage import EngageConfig, EngageRunner
 from inertia_forge.engage_recovery import recovery_guidance
-from inertia_forge.engage_review import ReviewOutcome, _is_blocking
+from inertia_forge.engage_review import ReviewOutcome
 from inertia_forge.engage_targeted import build_test_instruction, map_source_to_test
 
 
@@ -58,12 +58,6 @@ class TestRecovery:
         assert len(recovery_guidance({})) == 1
 
 
-class TestReviewParse:
-    def test_verdict(self) -> None:
-        assert _is_blocking("looks bad\nVERDICT: blocking")
-        assert not _is_blocking("all good\nVERDICT: clean")
-        assert not _is_blocking("no verdict line at all")  # default clean
-
 
 class TestReviewWiring:
     def test_unresolved_review_fails_task(self, proj: Path) -> None:
@@ -85,30 +79,27 @@ class TestReviewWiring:
 
 
 class TestReviewLoop:
+    """engage_review now delegates the review judgment to review_agents.review_diff
+    (diff-based, P0/P1/P2). This module owns only the fix loop."""
+
     def test_clean_first_pass(self, proj: Path, monkeypatch) -> None:
         import inertia_forge.engage_review as r
-
-        class _Resp:
-            is_error = False
-            result = "VERDICT: clean"
-
-        class _Sess:
-            def __init__(self, *a, **k): ...
-            def invoke(self, prompt): return _Resp()
-        monkeypatch.setattr("inertia_forge.agent.AgentSession", _Sess)
+        from inertia_forge.review_agents import ReviewResult
+        monkeypatch.setattr("inertia_forge.review_agents.review_diff",
+                            lambda *a, **k: ReviewResult(action="approve"))
         out = r.review_and_fix({"id": "T1.1", "title": "t"}, _cfg(proj), max_iterations=3)
         assert out.resolved and out.iterations == 1
 
     def test_blocking_exhausts(self, proj: Path, monkeypatch) -> None:
         import inertia_forge.engage_review as r
+        from inertia_forge.review_agents import ReviewResult
+        monkeypatch.setattr("inertia_forge.review_agents.review_diff",
+                            lambda *a, **k: ReviewResult(
+                                action="request_changes", findings=[("nayru", "### P0 bad")]))
 
-        class _Resp:
-            is_error = False
-            result = "VERDICT: blocking"
-
-        class _Sess:
+        class _Sess:  # the fixer — no-op
             def __init__(self, *a, **k): ...
-            def invoke(self, prompt): return _Resp()
+            def invoke(self, prompt): return type("R", (), {"is_error": False, "result": ""})()
         monkeypatch.setattr("inertia_forge.agent.AgentSession", _Sess)
         out = r.review_and_fix({"id": "T1.1", "title": "t"}, _cfg(proj), max_iterations=2)
         assert not out.resolved and out.iterations == 2
