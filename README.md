@@ -75,6 +75,7 @@ inertia-forge status
 | `inertia-forge learn synthesize` | cluster captured insights by tag into themes (deterministic, no model) |
 | `inertia-forge review [path] [--since REF]` | deterministic review: debug leftovers (P1: breakpoint/pdb/console.log/debugger), TODO/FIXME/HACK markers + hardcoded endpoints (P2); git-changed by default |
 | `inertia-forge diff [--since REF]` | structured change view — per-file +/- lines and role, rolled up |
+| `inertia-forge vet [path] [--since REF]` | insecure-code scan (AST bandit-lite): eval/exec, `shell=True`, SQL-by-f-string (P1); os.system, pickle, `yaml.load`, weak hashes (P2) |
 | `inertia-forge state [--done/--next/--log]` | session-continuity ledger (+ history) |
 | `inertia-forge log [-n N] [--claims]` | view the audit trail (gate events / claims) |
 | `inertia-forge pack` | bundle state + plan + tasks + audit → `.forge/context_pack.md` |

@@ -97,6 +97,7 @@ _DISPATCH = {
     "dead-code": ("inertia_forge.deadcode", "run_dead_code"),
     "review": ("inertia_forge.review", "run_review"),
     "diff": ("inertia_forge.diffstat", "run_diff"),
+    "vet": ("inertia_forge.vet", "run_vet"),
 }
 
 
