@@ -115,7 +115,7 @@ inertia-forge status
 | `inertia-forge template new/list` | scaffold a forge-ready project |
 | `inertia-forge migrate status/run` | versioned `.forge` schema migrations |
 | `inertia-forge gaps [src]` | deterministic gap detector — skills w/o docs, tasks w/o AC, modules w/o tests |
-| `inertia-forge release validate-versions / checklist` | version-consistency check + release readiness |
+| `inertia-forge release validate-versions / checklist` | version-consistency check + a real release-readiness gate (versions · clean tree · CHANGELOG entry for the version · tests collectable · doc freshness); exits 1 on a blocker |
 | `inertia-forge sprint start/add/complete/list` | group tasks into named sprints |
 | `inertia-forge feedback add/list` | capture process feedback (`.forge/feedback.jsonl`) |
 | `inertia-forge install-hook` | install a native git pre-commit running the gate |

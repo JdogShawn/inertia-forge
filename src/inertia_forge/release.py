@@ -46,17 +46,56 @@ def _validate_versions() -> int:
     return 0 if ok else 1
 
 
+def _release_checks() -> list[tuple[str, str, str]]:
+    """[(name, status, detail)] — a real release-readiness gate. PASS/WARN/FAIL."""
+    import subprocess
+    import sys
+    from inertia_forge.freshness import is_stale
+    from inertia_forge.gitcheck import dirty_files
+    checks: list[tuple[str, str, str]] = []
+    ok, v = versions_consistent()
+    ver = next(iter(v.values()), "?")
+    checks.append(("versions", "PASS" if ok else "FAIL",
+                   "consistent" if ok else "disagree: " + ", ".join(f"{k.split('/')[-1]}={x}" for k, x in v.items())))
+    dirty = dirty_files(Path("."))
+    checks.append(("git", "PASS" if not dirty else "WARN",
+                   "clean" if not dirty else f"{len(dirty)} uncommitted file(s)"))
+    changelog = Path("CHANGELOG.md")
+    if changelog.exists():
+        has = ver in changelog.read_text(encoding="utf-8")
+        checks.append(("changelog", "PASS" if has else "FAIL",
+                       f"v{ver} present" if has else f"no entry for v{ver}"))
+    else:
+        checks.append(("changelog", "WARN", "no CHANGELOG.md (use `changelog` for git notes)"))
+    try:
+        r = subprocess.run([sys.executable, "-m", "pytest", "--collect-only", "-q"],
+                           capture_output=True, text=True, timeout=180)
+        rc = r.returncode
+        if rc == 0:
+            checks.append(("tests", "PASS", "collectable"))
+        elif rc == 5:  # pytest's "no tests collected" — not a failure
+            checks.append(("tests", "WARN", "no tests found"))
+        else:
+            checks.append(("tests", "FAIL", "collection failed"))
+    except (OSError, subprocess.SubprocessError):
+        checks.append(("tests", "WARN", "pytest not runnable"))
+    stale = is_stale("README.md", 30)
+    checks.append(("docs", "WARN" if stale else "PASS",
+                   "README >30d or missing" if stale else "README fresh"))
+    return checks
+
+
 def _checklist() -> int:
-    print("Release readiness checklist:")
-    ok, _ = versions_consistent()
-    print(f"  [{'x' if ok else ' '}] versions consistent (inertia-forge release validate-versions)")
-    print("  [ ] tests green        — inertia-forge verify --cov")
-    print("  [ ] project gate clean — inertia-forge check . --deps")
-    print("  [ ] no unused imports  — inertia-forge sweep .")
-    print("  [ ] schema current     — inertia-forge migrate status")
-    print("  [ ] changelog updated")
-    print("  [ ] tag + CI publish, then verify the artifact installs")
-    return 0 if ok else 1
+    from inertia_forge.glyphs import seal
+    from inertia_forge.palette import paint
+    checks = _release_checks()
+    kind = {"PASS": "ok", "WARN": "warn", "FAIL": "error"}
+    for name, status, detail in checks:
+        print(f"  {seal(kind[status])} {paint(name.ljust(12), 'text')} {paint(detail, 'muted')}")
+    fails = sum(1 for _, s, _ in checks if s == "FAIL")
+    verb = "NOT release-ready" if fails else "release-ready"
+    print(f"\n{seal('error' if fails else 'ok')} {verb} ({fails} blocker(s))")
+    return 1 if fails else 0
 
 
 def run_release(argv: list[str]) -> int:
